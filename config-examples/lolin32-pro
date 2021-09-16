@@ -159,7 +159,7 @@ CONFIG_EINK_BUSY=12
 # CS2 and MISO pins apply only to Plasticlogic.com epaper displays
 #
 CONFIG_EINK_SPI_CS2=2
-CONFIG_EINK_SPI_MISO=19
+CONFIG_EINK_SPI_MISO=27
 
 #
 # Config below applies to 4 epaper module wave12I48 w/4 SPI CS & BUSY pins (14 pins)
