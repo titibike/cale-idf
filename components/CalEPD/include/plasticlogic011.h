@@ -10,7 +10,6 @@
 #include <string>
 #include <plasticlogic.h>
 #include <Adafruit_GFX.h>
-#include <plasticlogic.h>
 #include <epdspi2cs.h>
 
 // Controller: UC8156  Manufacturer: https://www.plasticlogic.com/products/displays

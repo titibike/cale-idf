@@ -35,6 +35,11 @@ set(srcs
     #"models/plasticlogic/plasticlogic021.cpp"
     #"models/plasticlogic/plasticlogic031.cpp"
 
+    # IT8951 Eink.com IC controller (16 bit parallel)
+    "models/it8951/it8951base.cpp"
+    "models/it8951/epdfastspi.cpp"
+    "models/it8951/ed078kc2.cpp"
+    
     # Parallel epapers supported by Epdiy driver (Uncomment epdParallel & REQUIRES "epd_driver")
     # Uncomment for parallel epapers:
     "epdParallel.cpp"

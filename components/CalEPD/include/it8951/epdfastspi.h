@@ -14,6 +14,10 @@ class EpdFastSpi : IoInterface
 
     void cmd(const uint8_t cmd) override;
     void data(uint8_t data) override;
+
+    void cmd16(const uint16_t data);
+    void data16(const uint16_t data);
+    
     // No data is used here (No DC pin)
     void data(const uint8_t *data, int len) override; 
     void reset(uint8_t millis) override;

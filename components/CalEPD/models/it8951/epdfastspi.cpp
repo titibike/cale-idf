@@ -179,6 +179,25 @@ void EpdFastSpi::data(const uint8_t data)
 }
 
 /**
+ * Data does not toogle CS
+ */
+void EpdFastSpi::data16(const uint16_t data)
+{
+    if (debug_enabled) {
+        printf("D %x\n", data);
+    }
+
+    esp_err_t ret;
+    spi_transaction_t t;
+    memset(&t, 0, sizeof(t));       //Zero out the transaction
+    t.length=16;                    //Command is 16 bits
+    t.tx_buffer=&data;              //The data is the cmd itself 
+    ret=spi_device_polling_transmit(spi, &t);
+
+    assert(ret==ESP_OK);
+}
+
+/**
  * Send multiple data in one transaction
  */
 void EpdFastSpi::data(const uint8_t *data, int len)
