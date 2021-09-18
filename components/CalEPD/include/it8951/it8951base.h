@@ -1,15 +1,15 @@
 #include <calepd_version.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_system.h"
 #include <stdint.h>
+#include <string.h>
+#include <string>
 #include <math.h>
 #include "sdkconfig.h"
 #include "esp_log.h"
-#include <string>
 #include <Adafruit_GFX.h>
 #include <it8951/epdfastspi.h>
 
@@ -64,6 +64,17 @@ class It8951Base : public virtual Adafruit_GFX
     It8951Base(int16_t w, int16_t h, EpdFastSpi& dio) : Adafruit_GFX(w,h), IO(dio) {
         printf("CalEPD component version %s. Class: It8951Base\n",CALEPD_VERSION);
     };
+    bool _power_is_on = false;
+    static const uint16_t reset_to_ready_time = 1800; // ms, e.g. 1729001us
+    static const uint16_t power_on_time = 10;         // ms, e.g. 3001us
+    static const uint16_t power_off_time = 250;       // ms, e.g. 214001us
+    static const uint16_t full_refresh_time = 650;    // ms, e.g. 629001us
+    static const uint16_t partial_refresh_time = 300; // ms, e.g. 287001us
+    static const uint16_t refresh_cmd_time = 10;      // ms, e.g. 6052us
+    static const uint16_t refresh_par_time = 2;       // ms, e.g. 1921us
+    static const uint16_t default_wait_time = 1;      // ms, default busy check, needed?
+    static const uint16_t diag_min_time = 3;          // ms, e.g. > refresh_par_time
+    static const uint16_t set_vcom_time = 500;        // ms, e.g. 454967us
 
     void initIO(bool debug = false);
 
@@ -79,6 +90,8 @@ class It8951Base : public virtual Adafruit_GFX
     void print(const std::string& text);
     void println(const std::string& text);
     void newline();
+
+    void _InitDisplay();
     void _powerOn();
     void _powerOff();
 
@@ -94,12 +107,29 @@ class It8951Base : public virtual Adafruit_GFX
       b = t;
     }
     void _setSize(uint8_t epdSize);
-    void _wakeUp();
     void _waitBusy(const char* message, uint16_t busy_time);
+    
+    // IT8951
+    //void _waitWhileBusy2(const char* comment = 0, uint16_t busy_time = 5000);
+    uint16_t _transfer16(uint16_t value);
+    void _writeCommand16(uint16_t c);
+    void _writeData16(uint16_t d);
+    void _writeData16(const uint16_t* d, uint32_t n);
+    uint16_t _readData16();
+    void _readData16(uint16_t* d, uint32_t n);
+    void _writeCommandData16(uint16_t c, const uint16_t* d, uint16_t n);
+    void _IT8951SystemRun();
+    void _IT8951StandBy();
+    void _IT8951Sleep();
+    // Registers
+    uint16_t _IT8951ReadReg(uint16_t usRegAddr);
+    void _IT8951WriteReg(uint16_t usRegAddr, uint16_t usValue);
+    uint16_t _IT8951GetVCOM(void);
+    void _IT8951SetVCOM(uint16_t vcom);
 
   private:
     // Only detail IO is being instanced two times and may be not convenient:
     EpdFastSpi& IO;
-    
+
     uint8_t _unicodeEasy(uint8_t c);
 };

@@ -19,18 +19,19 @@
 #endif
 
 
-void EpdFastSpi::init(uint8_t frequency=24,bool debug=false){
+void EpdFastSpi::init(uint8_t frequency=4,bool debug=false){
     debug_enabled = debug;
         // debug_enabled
         // debug: 50000  0.5 Mhz so we can sniff the SPI commands with a Slave
     uint16_t multiplier = 1000;
     if (true) {
-      printf("EpdFastSpi::init() Debug enabled. SPI master at frequency:%d  MOSI:%d MISO: %d CLK:%d CS:%d DC:%d RST:%d BUSY:%d\n",
+      printf("EpdSpi::init() Debug enabled. SPI master at frequency:%d  MOSI:%d MISO: %d CLK:%d CS:%d DC:%d RST:%d BUSY:%d\n",
       frequency*multiplier*1000, CONFIG_EINK_SPI_MOSI, CONFIG_EINK_SPI_MISO, CONFIG_EINK_SPI_CLK, CONFIG_EINK_SPI_CS,
       CONFIG_EINK_DC,CONFIG_EINK_RST,CONFIG_EINK_BUSY);
         }
     //Initialize GPIOs direction & initial states. MOSI/MISO are setup by SPI interface
     gpio_set_direction((gpio_num_t)CONFIG_EINK_SPI_CS, GPIO_MODE_OUTPUT);
+
     gpio_set_direction((gpio_num_t)CONFIG_EINK_RST, GPIO_MODE_OUTPUT);
     gpio_set_direction((gpio_num_t)CONFIG_EINK_BUSY, GPIO_MODE_INPUT);
     gpio_set_pull_mode((gpio_num_t)CONFIG_EINK_BUSY, GPIO_PULLUP_ONLY);
@@ -39,7 +40,7 @@ void EpdFastSpi::init(uint8_t frequency=24,bool debug=false){
     gpio_set_level((gpio_num_t)CONFIG_EINK_RST, 1);
     
     esp_err_t ret;
-    // Here MISO is used, to receive epaper model & Lut version
+    // Here MISO is used, to receive temp & accelerometer data
     // BUFFER max transfer is 21" buffer *2
     spi_bus_config_t buscfg={
         .mosi_io_num=CONFIG_EINK_SPI_MOSI,
@@ -179,25 +180,6 @@ void EpdFastSpi::data(const uint8_t data)
 }
 
 /**
- * Data does not toogle CS
- */
-void EpdFastSpi::data16(const uint16_t data)
-{
-    if (debug_enabled) {
-        printf("D %x\n", data);
-    }
-
-    esp_err_t ret;
-    spi_transaction_t t;
-    memset(&t, 0, sizeof(t));       //Zero out the transaction
-    t.length=16;                    //Command is 16 bits
-    t.tx_buffer=&data;              //The data is the cmd itself 
-    ret=spi_device_polling_transmit(spi, &t);
-
-    assert(ret==ESP_OK);
-}
-
-/**
  * Send multiple data in one transaction
  */
 void EpdFastSpi::data(const uint8_t *data, int len)
@@ -226,4 +208,33 @@ void EpdFastSpi::reset(uint8_t millis=5) {
     vTaskDelay(millis / portTICK_RATE_MS);
     gpio_set_level((gpio_num_t)CONFIG_EINK_RST, 1);
     vTaskDelay(millis / portTICK_RATE_MS);
+}
+
+/**
+ * New methods added for IT8951
+ */
+void EpdFastSpi::data16(const uint16_t data)
+{
+    // Read: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/spi_master.html#c.SPI_SWAP_DATA_TX
+    //uint16_t predata = SPI_SWAP_DATA_TX(data, 16);
+
+    //if (debug_enabled) {
+        printf("D %x\n", data);
+    //}
+
+    esp_err_t ret;
+    spi_transaction_t t;
+    memset(&t, 0, sizeof(t));       //Zero out the transaction
+    t.length=16;                    //Command is 16 bits
+    t.tx_buffer=&data; 
+    ret=spi_device_polling_transmit(spi, &t);
+
+    assert(ret==ESP_OK);
+}
+
+void EpdFastSpi::csLow() {
+    gpio_set_level((gpio_num_t)CONFIG_EINK_SPI_CS, 0);
+}
+void EpdFastSpi::csHigh() {
+    gpio_set_level((gpio_num_t)CONFIG_EINK_SPI_CS, 1);
 }

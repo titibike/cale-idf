@@ -23,6 +23,8 @@ class PlasticLogic014 : public PlasticLogic
   public:
     PlasticLogic014(EpdSpi2Cs& IO);
     ~PlasticLogic014();
+
+    static const uint8_t colors_supported = 1;
     void init(bool debug = false);
     void clearScreen();
     void update(uint8_t updateMode=EPD_UPD_FULL);

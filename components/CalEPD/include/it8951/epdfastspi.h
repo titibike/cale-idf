@@ -22,6 +22,8 @@ class EpdFastSpi : IoInterface
     void data(const uint8_t *data, int len) override; 
     void reset(uint8_t millis) override;
     void init(uint8_t frequency, bool debug) override;
+    void csLow();
+    void csHigh();
 
     void release();
     uint8_t readTemp();
