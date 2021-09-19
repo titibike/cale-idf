@@ -28,10 +28,10 @@ set(srcs
     "models/color/wave5i7Color.cpp"
 
     # Plasticlogic.com Flex epaper models:
-    #"models/plasticlogic/epdspi2cs.cpp"
-    #"models/plasticlogic/plasticlogic.cpp"
+    "models/plasticlogic/epdspi2cs.cpp"
+    "models/plasticlogic/plasticlogic.cpp"
     #"models/plasticlogic/plasticlogic011.cpp"
-    #"models/plasticlogic/plasticlogic014.cpp"
+    "models/plasticlogic/plasticlogic014.cpp"
     #"models/plasticlogic/plasticlogic021.cpp"
     #"models/plasticlogic/plasticlogic031.cpp"
 

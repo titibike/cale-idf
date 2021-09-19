@@ -25,9 +25,9 @@ void EpdFastSpi::init(uint8_t frequency=4,bool debug=false){
         // debug: 50000  0.5 Mhz so we can sniff the SPI commands with a Slave
     uint16_t multiplier = 1000;
     if (true) {
-      printf("EpdSpi::init() Debug enabled. SPI master at frequency:%d  MOSI:%d MISO: %d CLK:%d CS:%d DC:%d RST:%d BUSY:%d\n",
+      printf("EpdSpi::init() Debug enabled. SPI master at frequency:%d  MOSI:%d MISO: %d CLK:%d CS:%d RST:%d BUSY:%d\n",
       frequency*multiplier*1000, CONFIG_EINK_SPI_MOSI, CONFIG_EINK_SPI_MISO, CONFIG_EINK_SPI_CLK, CONFIG_EINK_SPI_CS,
-      CONFIG_EINK_DC,CONFIG_EINK_RST,CONFIG_EINK_BUSY);
+      CONFIG_EINK_RST,CONFIG_EINK_BUSY);
         }
     //Initialize GPIOs direction & initial states. MOSI/MISO are setup by SPI interface
     gpio_set_direction((gpio_num_t)CONFIG_EINK_SPI_CS, GPIO_MODE_OUTPUT);
@@ -73,7 +73,8 @@ void EpdFastSpi::init(uint8_t frequency=4,bool debug=false){
     //Attach the EPD to the SPI bus
     ret=spi_bus_add_device(EPD_HOST, &devcfg, &spi);
     ESP_ERROR_CHECK(ret);
-
+    
+    printf("Done with SPI initialization\n");
     }
 
 // Release SPI connection
@@ -108,12 +109,6 @@ void EpdFastSpi::cmd(const uint8_t cmd)
     ret=spi_device_polling_transmit(spi, &t);
 
     assert(ret==ESP_OK);            //Should have had no issues.
-}
-
-uint8_t EpdFastSpi::readTemp()
-{
-    uint8_t regTemp[2] = {EPD_REGREAD | 0x08, 0xFF};
-    return readRegister(regTemp, sizeof(regTemp));
 }
 
 uint8_t EpdFastSpi::readRegister(const uint8_t *data, int len)
@@ -203,6 +198,27 @@ void EpdFastSpi::data(const uint8_t *data, int len)
     assert(ret==ESP_OK);
 }
 
+void EpdFastSpi::data16(const uint16_t *data, int len)
+{
+    if (len==0) return;
+    if (debug_enabled) {
+        printf("D\n");
+        for (int i = 0; i < len; i++)  {
+            printf("%x ",data[i]);
+        }
+        printf("\n");
+    }
+    esp_err_t ret;
+    spi_transaction_t t;
+                
+    memset(&t, 0, sizeof(t));
+    t.length=len*16;
+    t.tx_buffer=data;
+    ret=spi_device_polling_transmit(spi, &t);
+
+    assert(ret==ESP_OK);
+}
+
 void EpdFastSpi::reset(uint8_t millis=5) {
     gpio_set_level((gpio_num_t)CONFIG_EINK_RST, 0);
     vTaskDelay(millis / portTICK_RATE_MS);
@@ -215,12 +231,9 @@ void EpdFastSpi::reset(uint8_t millis=5) {
  */
 void EpdFastSpi::data16(const uint16_t data)
 {
-    // Read: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/spi_master.html#c.SPI_SWAP_DATA_TX
-    //uint16_t predata = SPI_SWAP_DATA_TX(data, 16);
-
-    //if (debug_enabled) {
+    if (debug_enabled) {
         printf("D %x\n", data);
-    //}
+    }
 
     esp_err_t ret;
     spi_transaction_t t;
@@ -232,9 +245,11 @@ void EpdFastSpi::data16(const uint16_t data)
     assert(ret==ESP_OK);
 }
 
+// @deprecated
 void EpdFastSpi::csLow() {
     gpio_set_level((gpio_num_t)CONFIG_EINK_SPI_CS, 0);
 }
+// @deprecated
 void EpdFastSpi::csHigh() {
     gpio_set_level((gpio_num_t)CONFIG_EINK_SPI_CS, 1);
 }

@@ -31,6 +31,7 @@ void Ed078Kc2::init(bool debug)
 
     _waitBusy("reset_to_ready", reset_to_ready_time);
     _writeCommand16(USDEF_I80_CMD_GET_DEV_INFO);
+
     _waitBusy("GetIT8951SystemInfo", power_on_time);
     //Set to Enable I80 Packed mode
     _IT8951WriteReg(I80CPCR, 0x0001);
@@ -65,11 +66,11 @@ void Ed078Kc2::clearScreen(uint8_t value){
   IO.data16(0x0000); // preamble for write data
   _waitBusy("clearScreen preamble", default_wait_time);
 
-  for (uint16_t x = 0; x < ED078KC2_BUFFER_SIZE; x++)
+  /* for (uint16_t x = 0; x < ED078KC2_BUFFER_SIZE; x++)
   {
     _buffer[x] = value;
     IO.data(value);
-  }
+  } */
 
   _writeCommand16(IT8951_TCON_LD_IMG_END);
   _waitBusy("clearScreen load end", default_wait_time);
@@ -104,12 +105,25 @@ void Ed078Kc2::_refresh(int16_t x, int16_t y, int16_t w, int16_t h, bool partial
 void Ed078Kc2::update(bool partial_update_mode)
 {
   ESP_LOGI(TAG, "Sending %d bytes buffer. Update mode:%d", ED078KC2_BUFFER_SIZE, (uint8_t)partial_update_mode);
-  //_waitBusy("Buffer sent", EPD_TMG_SRT);
-  _powerOn();
-  
-  _refresh(0, 0, WIDTH, HEIGHT, false);
+  _initial_write = false; // initial full screen buffer clean done
+  if (!_using_partial_mode) _Init_Part();
+  _setPartialRamArea(0, 0, WIDTH, HEIGHT);
+  IO.data16(0x0000);
+  _waitBusy("update preamble", default_wait_time);
+    for (uint64_t i = 0; i < uint32_t(WIDTH) * uint32_t(HEIGHT)/2; i++)
+  {
+    IO.data(_buffer[i]);
 
-  //_powerOff();
+    if (i%8 == 0) {
+      vTaskDelay(2/ portTICK_RATE_MS);
+      rtc_wdt_feed();
+    }
+  }
+
+  printf("Done with update buffer\n\n");
+  _writeCommand16(IT8951_TCON_LD_IMG_END);
+  _waitBusy("update load end", default_wait_time);
+  _refresh(0,0,WIDTH,HEIGHT);
 }
 
 void Ed078Kc2::drawPixel(int16_t x, int16_t y, uint16_t color) {

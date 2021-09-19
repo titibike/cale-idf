@@ -10,6 +10,7 @@
 #include <Adafruit_GFX.h>
 #include <it8951/epdfastspi.h>
 #include <it8951/it8951base.h>
+#include "soc/rtc_wdt.h" // Watch cat
 
 // Controller: IT8951 via ESP32 SPI Info: https://github.com/martinberlin/cale-idf/wiki/Model-parallel-ED078KC2
 #define ED078KC2_WIDTH 1872

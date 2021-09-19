@@ -8,8 +8,8 @@ void It8951Base::initIO(bool debug) {
   IO.init(1, debug); // Gx uses 24 MHz frequency. 10 Mhz for read
   
   if (CONFIG_EINK_RST > -1) {
-    printf("IO.reset(200)\n");
-    IO.reset(200);
+    printf("IO.reset(Long)\n");
+    IO.reset(244);
   }
   
 }
@@ -47,39 +47,30 @@ void It8951Base::_IT8951WriteReg(uint16_t usRegAddr, uint16_t usValue)
 void It8951Base::_writeData16(uint16_t d)
 {
   _waitBusy("_writeData16", default_wait_time);
-  IO.csLow();
-  IO.data16(0x0000);
-  _waitBusy("_writeData16 preamble", default_wait_time);
-  IO.data16(d);
-  IO.csHigh();
+  uint8_t d1 = d >>8;
+  uint8_t t16[4] = {0x00, 0x00, d1,(uint8_t)d};
+  IO.data(t16, sizeof(t16));
 }
 
 void It8951Base::_writeCommand16(uint16_t c)
 {
   char cmd[10];
-  sprintf(cmd, "cmd(%x)", c);
+  sprintf(cmd, "cmd(%02x)", c);
   _waitBusy(cmd, default_wait_time);
 
-  IO.csLow();
-  IO.data16(0x6000); // preamble for write command
-  /* uint8_t t16[2] = {0x60,0x00};
-  IO.data(t16, sizeof(t16)); */
-  _waitBusy("_writeCommand16 preamble", default_wait_time);
+  // 0x6000 preamble for command
+  // 60 00 c0 c1
+  uint8_t c1 = c >>8;
+  uint8_t t16[4] = {0x60, 0x00, c1, (uint8_t)c};
+  IO.data(t16, sizeof(t16));
 
-
-  IO.data16(c);
-  IO.csHigh();
 }
 
 void It8951Base::_writeCommandData16(uint16_t c, const uint16_t* d, uint16_t n)
 {
-  IO.csLow();
   _writeCommand16(c);
-  for (uint16_t i = 0; i < n; i++)
-  {
-    IO.data16(d[i]);
-  }
-  IO.csHigh();
+
+  IO.data16(d, n);
 }
 
 void It8951Base::_IT8951SystemRun()
@@ -100,26 +91,33 @@ void It8951Base::_IT8951Sleep()
 
 void It8951Base::_waitBusy(const char* message, uint16_t busy_time){
   //if (debug_enabled) {
-    ESP_LOGI(TAG, "_waitBusy for %s", message);
+    ESP_LOGI(TAG, "_BUSY for %s", message);
     // Add some margin
-    vTaskDelay(2 / portTICK_RATE_MS);
+    vTaskDelay(1 / portTICK_RATE_MS);
   //}
+
+
   int64_t time_since_boot = esp_timer_get_time();
   // On low is busy
   if (gpio_get_level((gpio_num_t)CONFIG_EINK_BUSY) == 0) {
+   
   while (1){
     if (gpio_get_level((gpio_num_t)CONFIG_EINK_BUSY) == 1) {
-      printf(" waited: %lld\n", esp_timer_get_time()-time_since_boot);
+      printf(" waited:%lld ms\n", (esp_timer_get_time()-time_since_boot)/1000);
       break;
     }
-    vTaskDelay(2 / portTICK_RATE_MS);
-    if (esp_timer_get_time()-time_since_boot>busy_time)
+    vTaskDelay(1 / portTICK_RATE_MS);
+    uint64_t timespent = (esp_timer_get_time()-time_since_boot)/1000;
+
+    if (timespent>500)
     {
-      if (debug_enabled) ESP_LOGI(TAG, "Busy Timeout");
+      ESP_LOGI(TAG, "Busy Timeout>%d ts:%lld", busy_time, timespent);
       break;
     }
   }
+
   } else {
+    vTaskDelay(busy_time / portTICK_RATE_MS);
     printf("HRDY is high\n");
   }
 }
