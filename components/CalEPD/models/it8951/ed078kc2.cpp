@@ -30,9 +30,9 @@ void Ed078Kc2::init(bool debug)
     initIO(debug);
 
     _waitBusy("reset_to_ready", reset_to_ready_time);
-    _writeCommand16(USDEF_I80_CMD_GET_DEV_INFO);
-
-    _waitBusy("GetIT8951SystemInfo", power_on_time);
+    // Todo: Get dev info (Width / Height and LUT version)
+    //_writeCommand16(USDEF_I80_CMD_GET_DEV_INFO);
+    //_waitBusy("GetIT8951SystemInfo", power_on_time);
     //Set to Enable I80 Packed mode
     _IT8951WriteReg(I80CPCR, 0x0001);
 
@@ -55,22 +55,43 @@ void Ed078Kc2::_Init_Part()
 }
 
 void Ed078Kc2::clearScreen(uint8_t value){
-  _initial_write = false; // initial full screen buffer clean done
+  _initial_write = false;
   if (_initial_refresh) {
     _Init_Full();
   }  else {
     _Init_Part();
-    _initial_refresh = false;
-    _setPartialRamArea(0, 0, WIDTH, HEIGHT);
   }
-  IO.data16(0x0000); // preamble for write data
+  //IO.data16(0x0000); // preamble for write data
+  uint8_t t16[2] = {0x00, 0x00};
+  IO.data(t16, sizeof(t16));
   _waitBusy("clearScreen preamble", default_wait_time);
 
-  /* for (uint16_t x = 0; x < ED078KC2_BUFFER_SIZE; x++)
+  _initial_refresh = false;
+
+  //memset(_buffer, value, ED078KC2_BUFFER_SIZE);
+  //Setting Load image information
+  IT8951LdImgInfo stLdImgInfo;
+  stLdImgInfo.usEndianType     = IT8951_LDIMG_L_ENDIAN;
+  stLdImgInfo.usPixelFormat    = IT8951_4BPP; 
+  stLdImgInfo.usRotate         = IT8951_ROTATE_0;
+  loadImgStart(&stLdImgInfo);
+
+  uint8_t xRow[ED078KC2_WIDTH/2];
+  int32_t idx = 0;
+  for (uint16_t y = 0; y < ED078KC2_HEIGHT; y++)
   {
-    _buffer[x] = value;
-    IO.data(value);
-  } */
+    for (uint16_t x = 0; x < ED078KC2_WIDTH/2; x++)
+    {
+      xRow[x] = value;
+      ++idx;
+    }
+    IO.data(xRow, sizeof(xRow));
+    if (y%8==0) {
+      vTaskDelay(12/ portTICK_RATE_MS);
+      rtc_wdt_feed();
+    }
+  }
+  printf("buffer size: %d\n", idx);
 
   _writeCommand16(IT8951_TCON_LD_IMG_END);
   _waitBusy("clearScreen load end", default_wait_time);
@@ -106,24 +127,43 @@ void Ed078Kc2::update(bool partial_update_mode)
 {
   ESP_LOGI(TAG, "Sending %d bytes buffer. Update mode:%d", ED078KC2_BUFFER_SIZE, (uint8_t)partial_update_mode);
   _initial_write = false; // initial full screen buffer clean done
-  if (!_using_partial_mode) _Init_Part();
-  _setPartialRamArea(0, 0, WIDTH, HEIGHT);
-  IO.data16(0x0000);
-  _waitBusy("update preamble", default_wait_time);
-    for (uint64_t i = 0; i < uint32_t(WIDTH) * uint32_t(HEIGHT)/2; i++)
-  {
-    IO.data(_buffer[i]);
+  if (!_using_partial_mode) {
+    _Init_Part();
+  } else {
+    _Init_Full();
+  }
+  //Setting Load image information
+  IT8951LdImgInfo stLdImgInfo;
+  stLdImgInfo.usEndianType     = IT8951_LDIMG_L_ENDIAN;
+  stLdImgInfo.usPixelFormat    = IT8951_4BPP;
+  stLdImgInfo.usRotate         = IT8951_ROTATE_0;
+  loadImgStart(&stLdImgInfo);
 
-    if (i%8 == 0) {
-      vTaskDelay(2/ portTICK_RATE_MS);
+  uint8_t t16[4] = {0x00, 0x00, 0x00, 0x00};
+  IO.data(t16, sizeof(t16));
+  _waitBusy("update/() preamble", default_wait_time);
+
+  uint8_t xRow[ED078KC2_WIDTH/2];
+  uint32_t idx = 0;
+  for (uint16_t y = 0; y < ED078KC2_HEIGHT; y++)
+  {
+    for (uint16_t x = 0; x < ED078KC2_WIDTH/2; x++)
+    {
+      xRow[x] = _buffer[idx];
+      ++idx;
+    }
+
+    IO.data(xRow, sizeof(xRow));
+    if (y%20 == 0) {
+      vTaskDelay(8/ portTICK_RATE_MS);
       rtc_wdt_feed();
     }
   }
+  printf("Done sending img buffer : %d|%d\n", idx, ED078KC2_BUFFER_SIZE);
 
-  printf("Done with update buffer\n\n");
   _writeCommand16(IT8951_TCON_LD_IMG_END);
   _waitBusy("update load end", default_wait_time);
-  _refresh(0,0,WIDTH,HEIGHT);
+  _refresh(0, 0, WIDTH, HEIGHT);
 }
 
 void Ed078Kc2::drawPixel(int16_t x, int16_t y, uint16_t color) {
@@ -158,7 +198,8 @@ void Ed078Kc2::drawPixel(int16_t x, int16_t y, uint16_t color) {
 void Ed078Kc2::_setPartialRamArea(uint16_t x, uint16_t y, uint16_t w, uint16_t h)
 {
   uint16_t usArg[5];
-  usArg[0] = (IT8951_LDIMG_B_ENDIAN << 8 ) | (IT8951_8BPP << 4) | (IT8951_ROTATE_0);
+  // IT8951_8BPP
+  usArg[0] = (IT8951_LDIMG_B_ENDIAN << 8 ) | (IT8951_4BPP << 4) | (IT8951_ROTATE_0);
   usArg[1] = x;
   usArg[2] = y;
   usArg[3] = w;

@@ -5,7 +5,7 @@
 
 // Plasticlogic will replace Epd as baseclass for this models and have all common methods for all EPDs of this manufacturer
 void It8951Base::initIO(bool debug) {
-  IO.init(1, debug); // Gx uses 24 MHz frequency. 10 Mhz for read
+  IO.init(11, debug); // Gx uses 24 MHz frequency. 10 Mhz for read
   
   if (CONFIG_EINK_RST > -1) {
     printf("IO.reset(Long)\n");
@@ -47,8 +47,9 @@ void It8951Base::_IT8951WriteReg(uint16_t usRegAddr, uint16_t usValue)
 void It8951Base::_writeData16(uint16_t d)
 {
   _waitBusy("_writeData16", default_wait_time);
-  uint8_t d1 = d >>8;
-  uint8_t t16[4] = {0x00, 0x00, d1,(uint8_t)d};
+  uint8_t d1 = d >>8 & 0xff;
+  uint8_t d2 = d & 0xff;
+  uint8_t t16[4] = {0x00, 0x00, d1, d2};
   IO.data(t16, sizeof(t16));
 }
 
@@ -60,17 +61,28 @@ void It8951Base::_writeCommand16(uint16_t c)
 
   // 0x6000 preamble for command
   // 60 00 c0 c1
-  uint8_t c1 = c >>8;
-  uint8_t t16[4] = {0x60, 0x00, c1, (uint8_t)c};
+  uint8_t c1 = c >>8 & 0xff;
+  uint8_t c2 = c  & 0xff;
+  uint8_t t16[4] = {0x60, 0x00, c1, c2};
   IO.data(t16, sizeof(t16));
 
 }
 
 void It8951Base::_writeCommandData16(uint16_t c, const uint16_t* d, uint16_t n)
 {
-  _writeCommand16(c);
+  char cmd[15];
+  // 0x6000 preamble for command
+  uint8_t c1 = c >>8 & 0xff;
+  uint8_t c2 = c & 0xff;
+  sprintf(cmd, "cmdD(%x%x)", c, c);
+  _waitBusy(cmd, default_wait_time);
 
-  IO.data16(d, n);
+  uint8_t t16[4+n] = {0x60, 0x00, c1, c2};
+  
+  for (uint64_t i = 4; i < n+4; i++) {
+    t16[i] = d[i-4];
+  }
+  IO.data(t16, sizeof(t16));
 }
 
 void It8951Base::_IT8951SystemRun()
@@ -109,7 +121,7 @@ void It8951Base::_waitBusy(const char* message, uint16_t busy_time){
     vTaskDelay(1 / portTICK_RATE_MS);
     uint64_t timespent = (esp_timer_get_time()-time_since_boot)/1000;
 
-    if (timespent>500)
+    if (timespent>200)
     {
       ESP_LOGI(TAG, "Busy Timeout>%d ts:%lld", busy_time, timespent);
       break;
@@ -166,4 +178,21 @@ void It8951Base::println(const std::string& text){
 
 void It8951Base::newline() {
   write(10);
+}
+
+//-----------------------------------------------------------
+//Host Cmd 10---LD_IMG
+//-----------------------------------------------------------
+void It8951Base::loadImgStart(IT8951LdImgInfo* pstLdImgInfo)
+{
+    uint16_t usArg;
+    //Setting Argument for Load image start
+    usArg = (pstLdImgInfo->usEndianType << 8 )
+    |(pstLdImgInfo->usPixelFormat << 4)
+    |(pstLdImgInfo->usRotate);
+
+    //Send Cmd
+    _writeCommand16(IT8951_TCON_LD_IMG);
+    //Send Arg
+    _writeData16(usArg);
 }
