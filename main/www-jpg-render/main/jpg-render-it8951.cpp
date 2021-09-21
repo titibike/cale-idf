@@ -40,7 +40,10 @@
 #define EPD_HEIGHT 1404
 // Affects the gamma to calculate gray (lower is darker/higher contrast)
 // Nice test values: 0.9 1.2 1.4 higher and is too bright
-double gamma_value = 1.2;
+#define USE_GAMMA_CORRECTION true
+double gamma_value = 0.8;
+
+
 // Image URL and jpg settings. Make sure to update EPD_WIDTH/HEIGHT if using loremflickr
 // Note: Only HTTP protocol supported (Check README to use SSL secure URLs) loremflickr
 #define STR_HELPER(x) #x
@@ -282,9 +285,12 @@ tjd_output(JDEC *jd,     /* Decompressor object of current session */
       continue;
     }
 
-    // Write the pixel directly
-    display.drawPixel(xx, yy, gamme_curve[val]);
-    
+    // Write the pixel using color888
+    #if USE_GAMMA_CORRECTION == false
+      display.drawPixel(xx, yy,  display.color888(r, g, b));
+    #else
+      display.drawPixel(xx, yy,  display.color888(gamme_curve[r], gamme_curve[g], gamme_curve[b]));
+    #endif
   }
 
   return 1;
@@ -542,8 +548,9 @@ void app_main() {
   }
   printf("Free heap after buffers allocation: %d\n", xPortGetFreeHeapSize());
 
-  display.setEpdMode(epd_mode_t::epd_quality);
+  
   display.init();
+  display.setEpdMode(epd_mode_t::epd_fast);
 
   double gammaCorrection = 1.0 / gamma_value;
   for (int gray_value =0; gray_value<256;gray_value++)
