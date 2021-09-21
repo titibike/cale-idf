@@ -3,7 +3,6 @@
 #include "freertos/task.h"
 
 // Should match with your epaper module, size
-#include <it8951/epdfastspi.h>
 #include <it8951/ed078kc2.h>
 
 EpdFastSpi io;
@@ -34,58 +33,29 @@ void demo_chars(){
 
 void app_main(void)
 {
-   printf("CalEPD version: %s\n", CALEPD_VERSION);
+   printf("CalEPD version: %s This class is still in development and does not work!\n", CALEPD_VERSION);
+   printf("Please use demo-it8951-lovyan.cpp example\n\n");
    // Show available Dynamic Random Access Memory available after display.init()
-   printf("Fonts-demo. Free heap: %d (After epaper instantiation)\nDRAM     : %d\n", 
-   xPortGetFreeHeapSize(),heap_caps_get_free_size(MALLOC_CAP_8BIT));
+   printf("Fonts-demo. Free heap: %d (After epaper instantiation)\n", xPortGetFreeHeapSize());
 
    // Bootstrap epaper class
    display.init(false);
-   // Store your epapers all white, just turn true:
-   if (false) {
-     display.fillScreen(EPD_WHITE); 
-     display.update();
-     return;
-   }
-
-   display.update();
-   vTaskDelay(700); // short delay to demonstrate red color working
-   display.fillScreen(EPD_WHITE);
-
-   display.fillCircle(300,300, 100, EPD_BLACK);
-
-   display.setCursor(10,40);
-   display.setTextColor(EPD_BLACK);
    
-   display.setFont(&Ubuntu_M12pt8b);
+   display.clearScreen(155);
 
-   display.println("German characters test");
-   display.println("° äöü ÄÖÜ ß");
-   display.println("Löwen, Bären, Vögel und Käfer sind Tiere. Völlerei lässt grüßen! Heute ist 38° zu warm.");
-   display.println("");
-   display.println("Spanish / French characters test");
-   display.println("æçèé êëìí ï ñ");
-   display.println("La cigüeña estaba sola en la caña. Estás allí?");
-   display.newline(); // new way to add a newline
-   
-   // German sentence
-   display.setFont(&Ubuntu_M8pt8b);
-   display.print("Ubuntu 8pt");
-   demo_chars();
+   display.fillCircle(200, 200, 400, 25);
 
-
-   display.println("");
-   display.print("\nUbuntu 12pt");
-   display.setFont(&Ubuntu_M12pt8b);
-   display.setTextColor(EPD_WHITE); // test white on the black circle
-   demo_chars();
-
-   // Let's draw one 100px radius circle Black and another on the right 120px radius Red
-   display.fillCircle(300,650, 165, EPD_BLACK); // test bottom left quadrant
-
-   display.fillCircle(600,300, 120, EPD_BLACK);
-
-   display.fillCircle(900,700, 150, EPD_BLACK);  // test bottom right quadrant
-
+   display.fillCircle(200, 400, 300, 225);
+   //display.fillRect(100,100,100,100, 0);
    display.update();
+   
+    
+   /* display.setCursor(50,100);
+   display.setTextColor(EPD_WHITE);
+   display.setFont(&Ubuntu_M12pt8b);
+   display.println("Hello!");  
+
+   
+    */
+   return;
 }

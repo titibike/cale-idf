@@ -23,7 +23,7 @@ void Ed078Kc2::init(bool debug)
 {
     debug_enabled = debug;
     if (debug_enabled) {
-      printf("Ed078Kc2::init(%d) bufferSize: %d width: %d height: %d\n", 
+      printf("Do not use, it's not ready yet\n\nUse LovyanGFX as a component!\n\nEd078Kc2::init(%d) bufferSize: %d width: %d height: %d\n", 
     debug, ED078KC2_BUFFER_SIZE, ED078KC2_WIDTH, ED078KC2_HEIGHT);
     }
      // Start SPI after long reset pulse
