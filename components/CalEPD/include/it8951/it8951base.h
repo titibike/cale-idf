@@ -64,6 +64,18 @@ class It8951Base : public virtual Adafruit_GFX
     It8951Base(int16_t w, int16_t h, EpdFastSpi& dio) : Adafruit_GFX(w,h), IO(dio) {
         printf("CalEPD component version %s. Class: It8951Base\n",CALEPD_VERSION);
     };
+
+    typedef struct IT8951LdImgInfo
+    {
+        uint16_t usEndianType; //little or Big Endian
+        uint16_t usPixelFormat; //bpp
+        uint16_t usRotate; //Rotate mode
+        uint16_t x;
+        uint16_t y;
+        uint16_t w;
+        uint16_t h;        
+    } IT8951LdImgInfo;
+
     bool _power_is_on = false;
     static const uint16_t reset_to_ready_time = 1800; // ms, e.g. 1729001us
     static const uint16_t power_on_time = 10;         // ms, e.g. 3001us
@@ -94,6 +106,14 @@ class It8951Base : public virtual Adafruit_GFX
     void _InitDisplay();
     void _powerOn();
     void _powerOff();
+    //-----------------------------------------------------------
+    //Host Cmd 10---LD_IMG
+    //-----------------------------------------------------------
+    void loadImgStart(IT8951LdImgInfo* pstLdImgInfo);
+    //-----------------------------------------------------------
+    //Host Cmd 11---LD_IMG_AREA
+    //-----------------------------------------------------------
+    void loadImgAreaStart(IT8951LdImgInfo* pstLdImgInfo);
 
   // Methods that should be accesible by inheriting this abstract class
   protected: 

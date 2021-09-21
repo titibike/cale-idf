@@ -196,3 +196,21 @@ void It8951Base::loadImgStart(IT8951LdImgInfo* pstLdImgInfo)
     //Send Arg
     _writeData16(usArg);
 }
+
+//-----------------------------------------------------------
+//Host Cmd 11---LD_IMG_AREA
+//-----------------------------------------------------------
+void It8951Base::loadImgAreaStart(IT8951LdImgInfo* pstLdImgInfo)
+{
+    uint16_t usArg[5];
+    //Setting Argument for Load image start
+    usArg[0] = (pstLdImgInfo->usEndianType << 8 )
+    |(pstLdImgInfo->usPixelFormat << 4)
+    |(pstLdImgInfo->usRotate);
+    usArg[1] = pstLdImgInfo->x;
+    usArg[2] = pstLdImgInfo->y;
+    usArg[3] = pstLdImgInfo->w;
+    usArg[4] = pstLdImgInfo->h;
+    //Send Cmd and Args
+    _writeCommandData16(IT8951_TCON_LD_IMG_AREA , usArg , 5);
+}
