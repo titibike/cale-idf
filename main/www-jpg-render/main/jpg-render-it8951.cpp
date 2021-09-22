@@ -281,7 +281,7 @@ tjd_output(JDEC *jd,     /* Decompressor object of current session */
         rtc_wdt_feed();
       }
     }
-    display.pushImage(rect->left, rect->top, w, h, (lgfx::bgr888_t*)buf);
+    display.pushImage(rect->left, rect->top, w, h, (lgfx::grayscale_t*)buf);
     #else
     // Now working as expected (see image)
     display.pushImage(rect->left, rect->top, w, h, (lgfx::bgr888_t*)bitmap);
@@ -547,7 +547,9 @@ void app_main() {
 
   
   display.init();
-  display.setEpdMode(epd_mode_t::epd_fast);
+  // epd_fast:    LovyanGFX uses a 4×4 16pixel tile pattern to display a pseudo 17level grayscale.
+  // epd_quality: Uses 16 levels of grayscale
+  display.setEpdMode(epd_mode_t::epd_quality);
 
   double gammaCorrection = 1.0 / gamma_value;
   for (int gray_value =0; gray_value<256;gray_value++)
