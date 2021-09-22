@@ -22,6 +22,7 @@
 #include "esp_netif.h"
 #include "esp_http_client.h"
 #include "esp_sntp.h"
+#include "soc/rtc_wdt.h"
 
 // JPG decoder
 #if ESP_IDF_VERSION_MAJOR >= 4 // IDF 4+
@@ -49,7 +50,8 @@ double gamma_value = 0.8;
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
 //DEMO: https://placekitten.com/  or http://lorempixel.com/
-#define IMG_URL ("https://placekitten.com/" STR(EPD_WIDTH) "/" STR(EPD_HEIGHT))
+//#define IMG_URL ("https://placekitten.com/" STR(EPD_WIDTH) "/" STR(EPD_HEIGHT))
+#define IMG_URL "http://img.cale.es/jpg/fasani/5ef94f52ad2f6"
 
 #define LGFX_USE_V1
 #include <LovyanGFX.hpp>
@@ -261,37 +263,31 @@ tjd_output(JDEC *jd,     /* Decompressor object of current session */
 ) {
   esp_task_wdt_reset();
 
+  uint32_t render_start = esp_timer_get_time();
   uint32_t w = rect->right - rect->left + 1;
   uint32_t h = rect->bottom - rect->top + 1;
   uint32_t image_width = jd->width;
   uint8_t *bitmap_ptr = (uint8_t*)bitmap;
   
-  for (uint32_t i = 0; i < w * h; i++) {
-
-    uint8_t r = *(bitmap_ptr++);
-    uint8_t g = *(bitmap_ptr++);
-    uint8_t b = *(bitmap_ptr++);
-
-    // Calculate weighted grayscale
-    //uint32_t val = ((r * 30 + g * 59 + b * 11) / 100); // original formula
-    uint32_t val = (r*38 + g*75 + b*15) >> 7; // @vroland recommended formula
-
-    int xx = rect->left + i % w;
-    if (xx < 0 || xx >= image_width) {
-      continue;
+  #if USE_GAMMA_CORRECTION == true
+    uint8_t buf[w*h];
+    for (uint32_t i = 0; i < w * h; i++) {
+      uint8_t r = *(bitmap_ptr++);
+      uint8_t g = *(bitmap_ptr++);
+      uint8_t b = *(bitmap_ptr++);
+      
+      buf[i] = gamme_curve[(r*38 + g*75 + b*15)>>7];
+      if (i%10) {
+        rtc_wdt_feed();
+      }
     }
-    int yy = rect->top + i / w;
-    if (yy < 0 || yy >= jd->height) {
-      continue;
-    }
-
-    // Write the pixel using color888
-    #if USE_GAMMA_CORRECTION == false
-      display.drawPixel(xx, yy,  display.color888(r, g, b));
+    display.pushImage(rect->left, rect->top, w, h, (lgfx::bgr888_t*)buf);
     #else
-      display.drawPixel(xx, yy,  display.color888(gamme_curve[r], gamme_curve[g], gamme_curve[b]));
-    #endif
-  }
+    // Now working as expected (see image)
+    display.pushImage(rect->left, rect->top, w, h, (lgfx::bgr888_t*)bitmap);
+  #endif
+
+  time_render += (esp_timer_get_time() - render_start)/1000;
 
   return 1;
 }
@@ -375,6 +371,7 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt)
           // Refresh display
           display.endWrite();
 
+          ESP_LOGI("draw", "%d ms . image render", time_render);
           ESP_LOGI("total", "%d ms - total time spent\n", time_download+time_decomp+time_render);
         } else {
           printf("HTTP on finish got status code: %d\n", esp_http_client_get_status_code(evt->client));
