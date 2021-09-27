@@ -39,9 +39,9 @@
 // - - - - Display configuration - - - - - - - - -
 #define EPD_WIDTH  1872
 #define EPD_HEIGHT 1404
-// Affects the gamma to calculate gray (lower is darker/higher contrast)
+// Affects the gamma to calculate gray (lower is darker/higher contrast) Note: That on true is slower
 // Nice test values: 0.9 1.2 1.4 higher and is too bright
-#define USE_GAMMA_CORRECTION true
+#define USE_GAMMA_CORRECTION false
 double gamma_value = 0.8;
 
 
@@ -174,7 +174,7 @@ uint16_t ep_width = EPD_WIDTH;
 uint16_t ep_height = EPD_HEIGHT;
 uint8_t gamme_curve[256];
 
-static const char *TAG = "EPDiy";
+static const char *TAG = "TJpeg";
 uint16_t countDataEventCalls = 0;
 uint32_t countDataBytes = 0;
 uint32_t img_buf_pos = 0;
@@ -261,8 +261,6 @@ tjd_output(JDEC *jd,     /* Decompressor object of current session */
            void *bitmap, /* Bitmap data to be output */
            JRECT *rect   /* Rectangular region to output */
 ) {
-  esp_task_wdt_reset();
-
   uint32_t render_start = esp_timer_get_time();
   uint32_t w = rect->right - rect->left + 1;
   uint32_t h = rect->bottom - rect->top + 1;
@@ -271,22 +269,27 @@ tjd_output(JDEC *jd,     /* Decompressor object of current session */
   
   #if USE_GAMMA_CORRECTION == true
     uint8_t buf[w*h];
+
     for (uint32_t i = 0; i < w * h; i++) {
       uint8_t r = *(bitmap_ptr++);
       uint8_t g = *(bitmap_ptr++);
       uint8_t b = *(bitmap_ptr++);
       
       buf[i] = gamme_curve[(r*38 + g*75 + b*15)>>7];
-      if (i%10) {
+      // Avoid watchdog timer leaving some delay on each X row of the MCU
+      if (i%w == 0) {
         rtc_wdt_feed();
+        vTaskDelay(4 / portTICK_PERIOD_MS);
       }
     }
+
     display.pushImage(rect->left, rect->top, w, h, (lgfx::grayscale_t*)buf);
     #else
     // Now working as expected (see image)
     display.pushImage(rect->left, rect->top, w, h, (lgfx::bgr888_t*)bitmap);
   #endif
 
+  rtc_wdt_feed();
   time_render += (esp_timer_get_time() - render_start)/1000;
 
   return 1;
