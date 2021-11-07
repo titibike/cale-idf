@@ -1,11 +1,11 @@
 # Uncomment only one app_source
-#set(app_sources "jpg-render.cpp")
+set(app_sources "jpg-render.cpp")
 
 # Faster, uses less RAM, but looses dithering functionality:
 #set(app_sources "jpg-render-v2.cpp")
 
 # Only for IT8951 Eink dot com epapers with 16 bit parallel interface
-set(app_sources "jpg-render-it8951.cpp")
+#set(app_sources "jpg-render-it8951.cpp")
 # Using @bitbank2/JPEGDEC
 #set(app_sources "jpgdec-render.cpp")
 

@@ -10,8 +10,8 @@ idf_component_register(
     #SRCS "cale-grayscale.cpp"
 
     # IT8951 Eink.com demo
-    SRCS "demos/demo-it8951.cpp"
-    
+    #SRCS "demos/demo-it8951.cpp"
+    SRCS "demos/demo-it8951-lovyan.cpp"
     # Generic demos for touch displays (With an added layer or Gdew027w3T that comes with touch mounted)
     #SRCS "demos/demo-epaper.cpp"
     #SRCS "demos/demo-4-grays-7inch"

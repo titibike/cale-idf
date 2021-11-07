@@ -65,8 +65,8 @@ extern "C"
 // Note: Only HTTP protocol supported (Check README to use SSL secure URLs) loremflickr
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
-#define EPD_WIDTH  540
-#define EPD_HEIGHT 960
+#define EPD_WIDTH  960
+#define EPD_HEIGHT 540
 #define IMG_URL ("https://loremflickr.com/" STR(EPD_WIDTH) "/" STR(EPD_HEIGHT))
 
 // CALE url test (should match width/height of your EPD)

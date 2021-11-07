@@ -98,26 +98,34 @@ void loop(void)
   display.drawFastHLine(0, 0, 10);
 
   display.endWrite();
-
-  int32_t x, y;
 }
 
 void app_main(void)
 {
   // SPIバスとパネルの初期化を実行すると使用可能になります。
   display.init();
+  //display.setBrightness(255); // バックライトの輝度設定はEPDでは効果を持ちません。
+
+  display.setEpdMode(epd_mode_t::epd_fast);
 
   display.fillScreen(255);
-  while (true) {
-     loop();
-     vTaskDelay(1000/ portTICK_RATE_MS);
-  }
-  return;
+  
   display.startWrite();
-  display.setTextColor(TFT_WHITE);
-  display.drawString("HELLO WORLD", 30, 16);
-  display.drawRect(30,30,display.width()-60,display.height()-60, 200);
-  display.drawFastHLine(0, 0, 10);
+  
+  display.fillRect(0, 0, 200, 200, 0);
+  display.fillRect(0, 200, 200, 200, 10);
+  display.fillRect(0, 400, 200, 200, 20);
+  display.fillRect(0, 600, 200, 200, 30);
+   display.fillRect(0, 800, 200, 200, 40);
+   display.fillRect(0, 1000, 200, 200, 50);
+   display.fillRect(0, 1200, 200, 200, 60);
 
+   display.fillRect(200, 0, 200, 200, 70);
+   display.fillRect(200, 200, 200, 200, 80);
+   display.fillRect(200, 400, 200, 200, 90);
+   display.fillRect(200, 600, 200, 200, 100);
+   display.fillRect(200, 800, 200, 200, 110);
+   display.fillRect(200, 1000, 200, 200, 120);
+   display.fillRect(200, 1200, 200, 200, 130);
   display.endWrite();
 }
