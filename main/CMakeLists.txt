@@ -20,8 +20,8 @@ idf_component_register(
 
     # Generic demos for any displays
     #SRCS "demos/demo-sleep-clock.cpp"
-    # SRCS "demo-sleep-clock-v2.cpp"
-    #SRCS "demos/demo-fonts.cpp"
+     #SRCS "demo-sleep-clock-v2.cpp"
+    SRCS "demos/demo-fonts.cpp"
 
     # Demo to print 7 colors in Waveshare Acep epapers
     #SRCS "demos/demo-7-colors.cpp"
