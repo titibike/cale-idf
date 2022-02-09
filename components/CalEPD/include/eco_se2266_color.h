@@ -32,7 +32,19 @@
 #define EcoSE2266_8PIX_BLACK 0x00
 #define EcoSE2266_8PIX_WHITE 0xFF
 
-
+struct LUT_data
+{
+	uint8_t data1[2];
+	uint8_t data4[1];
+	uint8_t data15[1];
+	uint8_t data14[1];
+	uint8_t data8[42];
+	uint8_t data9[42];
+	uint8_t data10[42];
+	uint8_t data11[42];
+	uint8_t data12[42];
+	uint8_t data4_fix[1];
+};
 
 
 class EcoSE2266 : public Epd
@@ -41,7 +53,7 @@ class EcoSE2266 : public Epd
    
     EcoSE2266(EpdSpi& IO);
     uint8_t colors_supported = 3;
-    
+    LUT_data ltb;
     void drawPixel(int16_t x, int16_t y, uint16_t color);  // Override GFX own drawPixel method
     
     // EPD tests 
@@ -52,8 +64,10 @@ class EcoSE2266 : public Epd
     void update();
     void _Fullreset(uint32_t ms1, uint32_t ms2, uint32_t ms3, uint32_t ms4, uint32_t ms5);
     void testbuff(int a);
-    void initPartialUpdate();
-
+    void initPartialUpdate(LUT_data ltc);
+    void fastUpdateTest(const unsigned char* fastImgSet[], uint8_t fastImgSize,uint8_t numLoops);
+    void updateLUT(LUT_data *ltc);
+    void globalUpdate(const uint8_t * data1s, const uint8_t * data2s);
   private:
     EpdSpi& IO;
 

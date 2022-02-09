@@ -84,6 +84,19 @@ DRAM_ATTR const epd_init_42 EcoSE2266::lut_24_bb_partial={
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 },42};
+
+LUT_data ltb_custom2 = {
+	{0xff, 0x8f},
+	{0x07},
+	{0x11},
+	{0x0c},
+	{0x01, 0x00, 5, 5, 0x01, 9, 1, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+	{0x01, 0x55, 5, 5, 0x01, 9, 1, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+	{0x01, 0xaa, 5, 5, 0x01, 9, 1, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+	{0x01, 0x02, 5, 5, 0x01, 9, 1, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+	{0x01, 0x01, 5, 5, 0x01, 9, 1, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+	{0x27}
+};
 // Constructor
 EcoSE2266::EcoSE2266(EpdSpi &dio) : Adafruit_GFX(EcoSE2266_WIDTH, EcoSE2266_HEIGHT),
                                     Epd(EcoSE2266_WIDTH, EcoSE2266_HEIGHT), IO(dio)
@@ -97,8 +110,9 @@ EcoSE2266::EcoSE2266(EpdSpi &dio) : Adafruit_GFX(EcoSE2266_WIDTH, EcoSE2266_HEIG
 void EcoSE2266::init(bool debug)
 {
   debug_enabled = debug;
-  if (debug_enabled)
+  if (debug_enabled){
     printf("EcoSE2266::init(debug:%d)\n", debug);
+  }
   //Initialize SPI at 4MHz frequency. true for debug
   IO.init(4, debug);
   fillScreen(EPD_WHITE);
@@ -131,14 +145,17 @@ void EcoSE2266::_Fullreset(uint32_t ms1, uint32_t ms2, uint32_t ms3, uint32_t ms
 
 void EcoSE2266::_wakeUp()
 {
+  printf("Wake up  \n");
   uint8_t data[]={0};
-  vTaskDelay(5/portTICK_RATE_MS); // delay_ms 5ms
+  vTaskDelay(1/portTICK_RATE_MS); // delay_ms1
   gpio_set_level((gpio_num_t)CONFIG_EINK_RST, 1);
-  vTaskDelay(5/portTICK_RATE_MS); // delay_ms 5ms
+  vTaskDelay(5/portTICK_RATE_MS); // delay_ms2 5ms
+  gpio_set_level((gpio_num_t)CONFIG_EINK_RST, 1);
+  vTaskDelay(10/portTICK_RATE_MS); // delay_ms3 5ms
   gpio_set_level((gpio_num_t)CONFIG_EINK_RST, 0);
-  vTaskDelay(10/portTICK_RATE_MS); // delay_ms 5ms
+  vTaskDelay(5/portTICK_RATE_MS); // delay_ms4 5ms
   gpio_set_level((gpio_num_t)CONFIG_EINK_RST, 1);
-  vTaskDelay(5/portTICK_RATE_MS); // delay_ms 5ms
+  vTaskDelay(1/portTICK_RATE_MS); // delay_ms5 5ms
 
   gpio_set_level((gpio_num_t)CONFIG_EINK_SPI_CS,1);
   
@@ -148,7 +165,7 @@ void EcoSE2266::_wakeUp()
   vTaskDelay(5/portTICK_RATE_MS);
 
   IO.cmd(0xe5);
-  data[0]=0x16;
+  data[0]=0x19;
   IO.data(data,1);// Input Temperature 0°C = 0x00, 22°C = 0x16, 25°C = 0x19
 
   
@@ -160,9 +177,10 @@ void EcoSE2266::_wakeUp()
   IO.cmd(0x00);
   IO.data(data0,2); // PSR
  
-  uint8_t data4[] = {0x07};
+  /* uint8_t data4[] = {0x07};
   IO.cmd(0x50);
   IO.data(data4,1);// Vcom and data interval setting
+  */
   //_sendIndexData(0x50, data4, 1); 
 
   #if 1
@@ -316,6 +334,32 @@ gpio_set_level((gpio_num_t)CONFIG_EINK_SPI_CS, 0);
  //_sleep();
 }
 
+// Global Update function
+//		Implements global update functionality on either small/mid EPD
+//		- INPUT:
+//			- two image data (either BW and 0x00 or BW and BWR types)
+
+void EcoSE2266::globalUpdate(const uint8_t * data1s, const uint8_t * data2s){
+  uint8_t data[]={0};
+  // send first frame
+  IO.cmd(0x10);       
+  IO.data(data1s,EcoSE2266_BUFFER_SIZE);
+// send second frame
+  IO.cmd(0x13);       
+  IO.data(data2s,EcoSE2266_BUFFER_SIZE);
+
+  IO.cmd(0x04); //DCDC Power on
+  data[0]=0;
+  IO.data(data,1);
+  _waitBusy("power on");
+
+  IO.cmd(0x12); //refresh
+  data[0]=0x0;
+  IO.data(data,1);
+  vTaskDelay(50/portTICK_RATE_MS);
+  _waitBusy("refresh");
+}
+
 void EcoSE2266::_waitBusy(const char *message)
 {
   if (debug_enabled)
@@ -331,8 +375,9 @@ void EcoSE2266::_waitBusy(const char *message)
     vTaskDelay(1);
     if (esp_timer_get_time() - time_since_boot > 2000000)
     {
-      if (debug_enabled)
+      if (debug_enabled) {
         ESP_LOGI(TAG, "Busy Timeout");
+      }
       break;
     }
   }
@@ -409,43 +454,41 @@ void EcoSE2266::testbuff(int a){
   } 
 }
 
-void EcoSE2266::initPartialUpdate(){
-    IO.cmd(0x00);  //Panel setting for fast partial
-    IO.data(0xbf);
+void EcoSE2266::initPartialUpdate(LUT_data ltc){
+    uint8_t temp=16; 
 
-    IO.cmd(0x82);  //vcom_DC setting
-    IO.data(0x08);
+    IO.cmd(0x00);  //Panel setting for fast partial
+    IO.data(ltc.data1,2);
 
     IO.cmd(0X50);  //VCOM AND DATA INTERVAL SETTING
-    IO.data(0x17); //WBmode:VBDF 17|D7 VBDW 97 VBDB 57   WBRmode:VBDF F7 VBDW 77 VBDB 37  VBDR B7
+    IO.data(ltc.data4,1); //WBmode:VBDF 17|D7 VBDW 97 VBDB 57   WBRmode:VBDF F7 VBDW 77 VBDB 37  VBDR B7
 
-    uint8_t index = 0;
-    IO.cmd(lut_20_vcomDC_partial.cmd);
-    for (index = 0; index < lut_20_vcomDC_partial.databytes; index++) {
-      IO.data(lut_20_vcomDC_partial.data[index]);
-    }
-   
-    IO.cmd(lut_21_ww_partial.cmd);
-    for (index = 0; index < lut_21_ww_partial.databytes; index++) {
-      IO.data(lut_21_ww_partial.data[index]);
-    }
+    IO.cmd(0x30); //PLL setting
+    IO.data(ltc.data14,1);   //90 50HZ  3A 100HZ   29 150Hz 39 200HZ 31 171HZ
 
-    IO.cmd(lut_22_bw_partial.cmd);
-    for (index = 0; index < lut_22_bw_partial.databytes; index++) {
-      IO.data(lut_22_bw_partial.data[index]);
-    }
+    IO.cmd(0x82);  //vcom_DC setting
+    IO.data(ltc.data15,1);
+  
+  // send LUT
 
-    IO.cmd(lut_23_wb_partial.cmd);
-    for (index = 0; index < lut_23_wb_partial.databytes; index++) {
-      IO.data(lut_23_wb_partial.data[index]);
+	//_sendIndexData( 0x20, ltc.data8, temp );
+   IO.cmd(0x20);  
+    IO.data(ltc.data8,temp);
+	//_sendIndexData( 0x23, ltc.data9, temp );
+IO.cmd(0x23);  
+    IO.data(ltc.data9,temp);
+	//_sendIndexData( 0x22, ltc.data10, temp );
+IO.cmd(0x22);  
+    IO.data(ltc.data10,temp);
+	//_sendIndexData( 0x21, ltc.data11, temp );
+	IO.cmd(0x21);  
+    IO.data(ltc.data11,temp);
+  //_sendIndexData( 0x24, ltc.data12, temp );
+    IO.cmd(0x24);  
+    IO.data(ltc.data12,temp);
+    if (debug_enabled) { 
+      printf("initPartialUpdate() LUT\n");
     }
-
-    IO.cmd(lut_24_bb_partial.cmd);
-    for (index = 0; index < lut_24_bb_partial.databytes; index++) {
-      IO.data(lut_24_bb_partial.data[index]);
-    }
-    
-    if (debug_enabled) printf("initPartialUpdate() LUT\n");
 }
 
 uint16_t EcoSE2266::_setPartialRamArea(uint16_t x, uint16_t y, uint16_t xe, uint16_t ye) {
@@ -512,9 +555,73 @@ void EcoSE2266::updateWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h, boo
   // Only if sleep state is true:
   //if (!_using_partial_mode) _wakeUp();
   _using_partial_mode = true;
-  initPartialUpdate();
+  //initPartialUpdate();
   _writeToWindow(0x15, x, y, x, y, w, h);
   _refreshWindow(x, y, w, h);   
   _waitBusy("updateWindow");
   _writeToWindow(0x14, x, y, x, y, w, h);
+}
+
+
+
+// Fast Update function
+//		Implements fast update functionality
+//		- INPUT:
+//			- array of image data to iterate on
+//			- size of array
+void EcoSE2266::fastUpdateTest(const unsigned char* fastImgSet[], uint8_t fastImgSize,uint8_t numLoops){
+  //Turn off DC/DC
+  uint8_t data[]={0};
+  IO.cmd(0x02);
+  data[0]=0x00;
+  IO.data(data,1); 
+  _waitBusy("fastTest");
+
+   IO.cmd(0x00); 
+  data[0]=0x0e;
+  IO.data(data,1); // Soft-reset
+
+  initPartialUpdate(ltb);
+
+  //DC DC Power on 
+  IO.cmd(0x04);
+  data[0]=0x00;
+  IO.data(data,1); 
+  _waitBusy("DCDC");
+  uint8_t ii = 0;
+	while (ii < numLoops)
+	{
+		for (uint8_t j = 0; j < fastImgSize -1; j++)
+		{
+		  //First or previous frame
+			IO.cmd(0x10);        
+      IO.data(fastImgSet[j],EcoSE2266_BUFFER_SIZE);
+      
+      //Second or new frame
+			IO.cmd(0x13);     
+      IO.data(fastImgSet[j+1],EcoSE2266_BUFFER_SIZE);
+      
+      IO.cmd(0x50);
+      IO.data(ltb.data4,1); 
+
+		  IO.cmd(0x12);
+      data[0]=0x0;
+      IO.data(data,1);
+      vTaskDelay(50/portTICK_RATE_MS);
+      _waitBusy("refresh");
+			
+		}
+		ii++;
+	}
+
+}
+
+// Look-up table update function
+//		Enables fast update functionality
+//		- INPUT:
+//			- array of image data to iterate on
+//			- size of array
+void EcoSE2266::updateLUT(LUT_data *ltc)
+{
+	ltb = *ltc;
 }

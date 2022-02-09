@@ -69,15 +69,17 @@ void EpdSpi::init(uint8_t frequency=4,bool debug=false){
     //Attach the EPD to the SPI bus
     ret=spi_bus_add_device(EPD_HOST, &devcfg, &spi);
     ESP_ERROR_CHECK(ret);
-    
+    #if 0
     if (debug_enabled) {
       printf("EpdSpi::init() Debug enabled. SPI master at frequency:%d  MOSI:%d CLK:%d CS:%d DC:%d RST:%d BUSY:%d DMA_CH: %d\n",
       frequency*multiplier*1000, CONFIG_EINK_SPI_MOSI, CONFIG_EINK_SPI_CLK, CONFIG_EINK_SPI_CS,
       CONFIG_EINK_DC,CONFIG_EINK_RST,CONFIG_EINK_BUSY, DMA_CHAN);
-        } else {
-           printf("EpdSPI started at frequency: %d000\n", frequency*multiplier);
-        }
+        } 
+    else {
+        printf("EpdSPI started at frequency: %d000\n", frequency*multiplier);
     }
+    #endif
+}
 
 /* Send a command to the LCD. Uses spi_device_polling_transmit, which waits
  * until the transfer is complete.
@@ -88,9 +90,11 @@ void EpdSpi::init(uint8_t frequency=4,bool debug=false){
  */
 void EpdSpi::cmd(const uint8_t cmd)
 {
+
     if (debug_enabled) {
         printf("C %x\n",cmd);
     } 
+    vTaskDelay(20/portTICK_RATE_MS);
 
     esp_err_t ret;
     spi_transaction_t t;
@@ -119,7 +123,6 @@ void EpdSpi::data(uint8_t data)
     t.length=8;                     //Command is 8 bits
     t.tx_buffer=&data;              //The data is the cmd itself
     ret=spi_device_polling_transmit(spi, &t);
-    
     assert(ret==ESP_OK);
 }
 

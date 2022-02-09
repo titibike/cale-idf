@@ -45,6 +45,12 @@ EcoSE2266 display(io);
 //#include <Fonts/ubuntu/Ubuntu_M16pt8b.h>
 //#include <Fonts/ubuntu/Ubuntu_M20pt8b.h>
 
+#include "test_partial/FuPu_Data_266.h"
+#include "test_partial/FuPu_LUT_266.h"
+
+#define BW_monoBuffer        (uint8_t *) & image_266_296x152_BW_mono
+#define BW_0x00Buffer        (uint8_t *) & image_266_296x152_BW_0x00
+
 extern "C"
 {
    void app_main();
@@ -71,10 +77,21 @@ void app_main(void)
 
    // Bootstrap epaper class
    printf("begin init \n");
-   display.init(true);
+   display.init(false);
    printf("end init \n");
    vTaskDelay(1000/portTICK_RATE_MS);
   
+   #if 1 
+   printf("test partial refresh");
+   display.globalUpdate(BW_monoBuffer, BW_0x00Buffer);
+
+   vTaskDelay(1000/portTICK_RATE_MS);
+   printf("test global refresh");
+
+   display.updateLUT(&ltb_custom); 
+   display.fastUpdateTest(fastImageSet, fastImageSet_Size,1);
+   #endif
+
    #if 0
    printf(" Test Sushi \n");
   display.testbuff(0);
@@ -84,7 +101,9 @@ void app_main(void)
     vTaskDelay(2000/portTICK_RATE_MS);
     #endif
 
-   #if 1
+
+
+   #if 0
     printf("print Rectangle \n");
     display.setRotation(0);
     
