@@ -2,11 +2,12 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#include <gdeh0154d67.h>
+//#include <gdeh0154d67.h>
+#include "eco_se2266_color.h"
 // Single SPI EPD
 EpdSpi io;
-Gdeh0154d67 display(io);
-
+//Gdeh0154d67 display(io);
+EcoSE2266 display(io);
 bool cleanScreenAtStart = true;
 extern "C"
 {

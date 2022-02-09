@@ -3,12 +3,15 @@
 #include "freertos/task.h"
 
 // Should match with your epaper module, size
-#include <gdew042t2.h>
-#include <gdew0583t7.h>
-#include <gdew075T7.h>
-#include <gdew075T8.h>
-#include <gdew027w3.h>
+//#include <gdew042t2.h>
+//#include <gdew0583t7.h>
+//#include <gdew075T7.h>
+//#include <gdew075T8.h>
+//#include <gdew027w3.h>
 //#include <gdeh0213b73.h>
+
+/* Ecovelo */
+#include "eco_se2266_color.h"
 // Single SPI EPD
 //EpdSpi io;
 //Gdew075T8 display(io);
@@ -22,10 +25,12 @@
 // Please note that in order to use this big buffer (160 Kb) on this display external memory should be used
 // Otherwise you will run out of DRAM very shortly!
 //#include "wave12i48.h" // Only to use with Edp4Spi IO
-#include "wave12i48BR.h" // Only to use with Edp4Spi IO, Black Red model
-Epd4Spi io;
-Wave12I48RB display(io);
+//#include "wave12i48BR.h" // Only to use with Edp4Spi IO, Black Red model
 
+EpdSpi io;
+
+//Wave12I48RB display(io);
+EcoSE2266 display(io);
 
 
 // FONT used for title / message body - Only after display library
@@ -35,6 +40,8 @@ Wave12I48RB display(io);
 //#include <Fonts/ubuntu/Ubuntu_M18pt8b.h>
 #include <Fonts/ubuntu/Ubuntu_M8pt8b.h>
 #include <Fonts/ubuntu/Ubuntu_M12pt8b.h>
+#include <Fonts/ubuntu/Ubuntu_M48pt8b.h>
+#include <Fonts/FreeMono24pt7b.h>
 //#include <Fonts/ubuntu/Ubuntu_M16pt8b.h>
 //#include <Fonts/ubuntu/Ubuntu_M20pt8b.h>
 
@@ -63,57 +70,65 @@ void app_main(void)
    xPortGetFreeHeapSize(),heap_caps_get_free_size(MALLOC_CAP_8BIT));
 
    // Bootstrap epaper class
-   display.init(false);
-   // Store your epapers all white, just turn true:
-   if (false) {
-     display.fillScreen(EPD_WHITE); 
-     display.update();
-     return;
-   }
-
-
-   display.setRotation(2); // 0 - 12.48 w/USB pointing down
-   display.fillScreen(EPD_RED);
+   printf("begin init \n");
+   display.init(true);
+   printf("end init \n");
+   vTaskDelay(1000/portTICK_RATE_MS);
+  
+   #if 0
+   printf(" Test Sushi \n");
+  display.testbuff(0);
    display.update();
-   vTaskDelay(700); // short delay to demonstrate red color working
-   display.fillScreen(EPD_WHITE);
+    display.testbuff(1);
+    display.update();
+    vTaskDelay(2000/portTICK_RATE_MS);
+    #endif
 
-   display.fillCircle(300,300, 100, EPD_BLACK);
+   #if 1
+    printf("print Rectangle \n");
+    display.setRotation(0);
+    
+    //display.setTextColor(EPD_BLACK);
+    //display.setCursor(15,20);
+    //display.println("B");
+    display.fillScreen(EPD_WHITE);
+    display.update();
 
-   display.setCursor(10,40);
-   display.setTextColor(EPD_BLACK);
-   
-   display.setFont(&Ubuntu_M12pt8b);
-
-   display.println("German characters test");
-   display.println("° äöü ÄÖÜ ß");
-   display.println("Löwen, Bären, Vögel und Käfer sind Tiere. Völlerei lässt grüßen! Heute ist 38° zu warm.");
-   display.println("");
-   display.println("Spanish / French characters test");
-   display.println("æçèé êëìí ï ñ");
-   display.println("La cigüeña estaba sola en la caña. Estás allí?");
-   display.newline(); // new way to add a newline
-   
-   // German sentence
-   display.setFont(&Ubuntu_M8pt8b);
-   display.print("Ubuntu 8pt");
-   display.setTextColor(EPD_RED); // test red characters
-   demo_chars();
-
-
-   display.println("");
-   display.print("\nUbuntu 12pt");
-   display.setFont(&Ubuntu_M12pt8b);
-   display.setTextColor(EPD_RED);
-   display.setTextColor(EPD_WHITE); // test white on the black circle
-   demo_chars();
-
-   // Let's draw one 100px radius circle Black and another on the right 120px radius Red
-   display.fillCircle(300,650, 165, EPD_RED); // test bottom left quadrant
-
-   display.fillCircle(600,300, 120, EPD_RED);
-
-   display.fillCircle(900,700, 150, EPD_BLACK);  // test bottom right quadrant
-
+    //display.drawRect(10,10,22,20,EPD_BLACK);
+    //display.update();
+   vTaskDelay(2000/portTICK_RATE_MS);  
+    
+    for (int i=0;i<20;i++){
+       display.drawPixel(i,10,EPD_WHITE);
+    }
    display.update();
+
+   for (int i=20;i<40;i++){
+       display.drawPixel(i,10,EPD_WHITE);
+    }
+   display.update();
+
+
+   for (int i=40;i<60;i++){
+       display.drawPixel(i,10,EPD_WHITE);
+    }
+   display.update();
+   
+
+   for (int i=60;i<100;i++){
+       display.drawPixel(i,10,EPD_WHITE);
+    }
+   display.update();
+  //display.updateWindow(0,0,EcoSE2266_WIDTH,EcoSE2266_HEIGHT);
+   printf("\n end update windows \n");
+   /*
+   vTaskDelay(2000/portTICK_RATE_MS);  
+
+   for (int i=0;i<10;i++){
+       display.drawPixel(i,0,EPD_BLACK);
+    }
+   display.update();
+   vTaskDelay(2000/portTICK_RATE_MS);  */
+   #endif
+  
 }

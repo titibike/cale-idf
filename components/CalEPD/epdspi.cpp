@@ -44,14 +44,16 @@ void EpdSpi::init(uint8_t frequency=4,bool debug=false){
     // max_transfer_sz   4Kb is the defaut SPI transfer size if 0
     // debug: 50000  0.5 Mhz so we can sniff the SPI commands with a Slave
     uint16_t multiplier = 1000;
+    /*
     if (debug_enabled) {
         frequency = 50;
         multiplier = 1;
-    }
+    }*/
     //Config Frequency and SS GPIO
     spi_device_interface_config_t devcfg={
         .mode=0,  //SPI mode 0
         .clock_speed_hz=frequency*multiplier*1000,  // DEBUG: 50000 - No debug usually 4 Mhz
+        //.clock_speed_hz=4000000,  // DEBUG: 50000 - No debug usually 4 Mhz
         .input_delay_ns=0,
         .spics_io_num=CONFIG_EINK_SPI_CS,
         .flags = (SPI_DEVICE_HALFDUPLEX | SPI_DEVICE_3WIRE),
@@ -106,10 +108,11 @@ void EpdSpi::cmd(const uint8_t cmd)
 }
 
 void EpdSpi::data(uint8_t data)
-{
-    /* if (debug_enabled) {
+{   
+    
+     if (debug_enabled) {
       printf("D %x\n",data);
-    } */
+    } 
     esp_err_t ret;
     spi_transaction_t t;
     memset(&t, 0, sizeof(t));       //Zero out the transaction
@@ -140,7 +143,7 @@ void EpdSpi::dataBuffer(uint8_t data)
 void EpdSpi::data(const uint8_t *data, int len)
 {
   if (len==0) return; 
-    if (debug_enabled && false) {
+    if (debug_enabled && true) {
         printf("D\n");
         for (int i = 0; i < len; i++)  {
             printf("%x ",data[i]);

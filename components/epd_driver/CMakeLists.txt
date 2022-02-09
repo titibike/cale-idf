@@ -4,6 +4,7 @@ if(${target} STREQUAL "esp32c3")
         return()
 endif()
 if(${target} STREQUAL "esp32s2")
+        message ("\n I AM ESP33 ! \n \n")
         return()
 endif()
 

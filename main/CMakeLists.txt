@@ -11,7 +11,7 @@ idf_component_register(
 
     # Generic demos for touch displays (With an added layer or Gdew027w3T that comes with touch mounted)
     #SRCS "demos/demo-epaper.cpp"
-    SRCS "demos/demo-4-grays-7inch"
+    #SRCS "demos/demo-4-grays-7inch"
     
     # TOUCH examples. 1- Touch indepently from Epd class uses Gdew027w3   2- Touch implemented in Gdew027w3T class
     #SRCS "demos/demo-touch.cpp"
@@ -21,7 +21,9 @@ idf_component_register(
     # Generic demos for any displays
     #SRCS "demos/demo-sleep-clock.cpp"
      #SRCS "demo-sleep-clock-v2.cpp"
+
     SRCS "demos/demo-fonts.cpp"
+    #SRCS "demos/demo-ball.cpp"
 
     # Demo to print 7 colors in Waveshare Acep epapers
     #SRCS "demos/demo-7-colors.cpp"
