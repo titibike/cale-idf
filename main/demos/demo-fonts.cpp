@@ -79,21 +79,35 @@ void app_main(void)
    printf("begin init \n");
    display.init(false);
    printf("end init \n");
-   vTaskDelay(1000/portTICK_RATE_MS);
-  
+   vTaskDelay(100/portTICK_RATE_MS);
+   char data_char[100];
    #if 1
-   for (int i=0;i<4;i++){
+   
       vTaskDelay(200/portTICK_RATE_MS);
       printf("test partial refresh\n");
       display.fillScreen(EPD_WHITE);
-      display.globalUpdate(BW_monoBuffer, BW_0x00Buffer);
+      //display.globalUpdate(BW_monoBuffer, BW_0x00Buffer);
+      display.update();
       vTaskDelay(1000/portTICK_RATE_MS);
       printf("test global refresh\n");
       display.updateLUT(&ltb_custom);
-      printf("test partial refresh: %d\n",i); 
-      display.setRotation(i);
+      display.fastUpdateInit();
+
+      display.setTextColor(EPD_BLACK);
       display.setFont(&Ubuntu_M12pt8b);
-      display.fastUpdateTest(fastImageSet, fastImageSet_Size,1);
+      display.setRotation(3);
+      display.setCursor(30,20);
+      for (int i=0;i<300;i=i+50){
+         printf("test partial refresh: %d\n",i); 
+         display.fastUpdateInit();
+         //vTaskDelay(1000/portTICK_RATE_MS);
+         
+         //display.setCursor(i+30,20);
+         sprintf(data_char,"Hello %d",i);
+         printf("char: %s\n",data_char);
+         display.println(data_char);
+         display.fastUpdate();
+      //display.fastUpdateTest(fastImageSet, fastImageSet_Size,1);
    }
    #endif
 
