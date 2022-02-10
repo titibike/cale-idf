@@ -21,8 +21,8 @@
 // _screenDiagonal = 266;
 // _refreshTime = 15;
 
-#define EcoSE2266_WIDTH 296
-#define EcoSE2266_HEIGHT 152
+#define EcoSE2266_WIDTH 152
+#define EcoSE2266_HEIGHT 296
 
 // EPD comment: Pixel number expressed in bytes; this is neither the buffer size nor the size of the buffer in the controller
 // We are not adding page support so here this is our Buffer size
@@ -54,6 +54,8 @@ class EcoSE2266 : public Epd
     EcoSE2266(EpdSpi& IO);
     uint8_t colors_supported = 3;
     LUT_data ltb;
+    uint8_t _buffer[EcoSE2266_BUFFER_SIZE];
+    uint8_t _previous_buffer[EcoSE2266_BUFFER_SIZE];
     void drawPixel(int16_t x, int16_t y, uint16_t color);  // Override GFX own drawPixel method
     
     // EPD tests 
@@ -68,11 +70,12 @@ class EcoSE2266 : public Epd
     void fastUpdateTest(const unsigned char* fastImgSet[], uint8_t fastImgSize,uint8_t numLoops);
     void updateLUT(LUT_data *ltc);
     void globalUpdate(const uint8_t * data1s, const uint8_t * data2s);
+    void fastUpdate();
+    void fastUpdateInit();
   private:
     EpdSpi& IO;
 
-    uint8_t _buffer[EcoSE2266_BUFFER_SIZE];
-    uint8_t _color[EcoSE2266_BUFFER_SIZE];
+    
     bool _using_partial_mode = false;
     bool _initial = true;
     

@@ -130,7 +130,7 @@ void EcoSE2266::fillScreen(uint16_t color)
   for (uint16_t x = 0; x < sizeof(_buffer); x++)
   {
     _buffer[x] = black;
-    _color[x] = red;
+    _previous_buffer[x] = red;
   }
 }
 
@@ -228,110 +228,33 @@ void EcoSE2266::_wakeUp()
 
 void EcoSE2266::update()
 {
-  uint64_t startTime = esp_timer_get_time();
-  uint8_t dataCmd[]={0x0};
- // _using_partial_mode = false;
-  int _sizePageColour=EcoSE2266_HEIGHT*EcoSE2266_WIDTH;
 
-  
   //memcpy(_color,redBuffer,EcoSE2266_BUFFER_SIZE);
   uint8_t * nextBuffer = _buffer;
-  uint8_t * previousBuffer = _buffer + _sizePageColour;
+  uint8_t * previousBuffer = _previous_buffer;
   if (!_using_partial_mode){
   _wakeUp();
   _using_partial_mode = false;
   }
   
-  /* 
-  IO.cmd(0x10);
-  printf("Sending a %d bytes buffer via SPI\n", sizeof(_buffer));
-  */
-   // v2 SPI optimizing. Check: https://github.com/martinberlin/cale-idf/wiki/About-SPI-optimization
-  
-  #if 0
-  uint16_t i = 0;
-  uint8_t xLineBytes = EcoSE2266_WIDTH / 8;
-  uint8_t x1buf[xLineBytes];
-  for (uint16_t y = 1; y <= EcoSE2266_HEIGHT; y++)
-  {
-    for (uint16_t x = 1; x <= xLineBytes; x++)
-    {
-      uint8_t data = i < sizeof(_buffer) ? ~_buffer[i] : 0x00;
-      x1buf[x - 1] = data;
-      if (x == xLineBytes)
-      { // Flush the X line buffer to SPI
-        IO.data(x1buf, sizeof(x1buf));
-      }
-      ++i;
-    }
-  }
-
-  IO.cmd(0x13);
-  i = 0;
-  for (uint16_t y = 1; y <= EcoSE2266_HEIGHT; y++)
-  {
-    for (uint16_t x = 1; x <= xLineBytes; x++)
-    {
-      uint8_t data = i < sizeof(_color) ? _color[i] : 0x00;
-      x1buf[x - 1] = data;
-      if (x == xLineBytes)
-      { // Flush the X line buffer to SPI
-        IO.data(x1buf, sizeof(x1buf));
-      }
-      ++i;
-    }
-  }
-  vTaskDelay(50/portTICK_RATE_MS);
-
-  #else
-  printf("Hey bro \n\n");
-  /* TEST OTHER METOD SPI*/
-  IO.cmd(0x10);        // update old data
+  uint8_t data[]={0};
+  // send first frame
+  IO.cmd(0x10);       
   IO.data(previousBuffer,EcoSE2266_BUFFER_SIZE);
-  //IO.data(_buffer,EcoSE2266_BUFFER_SIZE); //TEST
-  
-
-  #if 1
-  IO.cmd(0x13);        // update current data
-  //IO.data(_color,EcoSE2266_BUFFER_SIZE);
+// send second frame
+  IO.cmd(0x13);       
   IO.data(nextBuffer,EcoSE2266_BUFFER_SIZE);
-  memcpy(previousBuffer, nextBuffer, EcoSE2266_BUFFER_SIZE); // Copy displayed next to previous
-  // IO.data(_buffer,sizeof(_buffer)); //TEST
-   #endif
 
-#endif
-  uint64_t endTime = esp_timer_get_time();
-
-  /* power on  */
-  #if 1
-  IO.cmd(0x04);
-  dataCmd[0]=0;
-  IO.data(dataCmd,1);
+  IO.cmd(0x04); //DCDC Power on
+  data[0]=0;
+  IO.data(data,1);
   _waitBusy("power on");
-#endif
 
-  #if 1
-  IO.cmd(0x12);
-  IO.data(dataCmd,1);
+  IO.cmd(0x12); //refresh
+  data[0]=0x0;
+  IO.data(data,1);
   vTaskDelay(50/portTICK_RATE_MS);
   _waitBusy("refresh");
-  #endif
-
-#if 0
-IO.cmd(0x02);
-#endif
-
-
-
-  uint64_t updateTime = esp_timer_get_time();
-
-  printf("\n\nSTATS (ms)\n%llu _wakeUp settings+send Buffer\n%llu update \n%llu total time in millis\n",
-         (endTime - startTime) / 1000, (updateTime - endTime) / 1000, (updateTime - startTime) / 1000);
-#if 1
-gpio_set_level((gpio_num_t)CONFIG_EINK_SPI_CS, 0);
-#endif
-
- //_sleep();
 }
 
 // Global Update function
@@ -358,6 +281,7 @@ void EcoSE2266::globalUpdate(const uint8_t * data1s, const uint8_t * data2s){
   IO.data(data,1);
   vTaskDelay(50/portTICK_RATE_MS);
   _waitBusy("refresh");
+
 }
 
 void EcoSE2266::_waitBusy(const char *message)
@@ -437,12 +361,21 @@ void EcoSE2266::drawPixel(int16_t x, int16_t y, uint16_t color)
     break;
   }
   uint16_t i = x / 8 + y * EcoSE2266_WIDTH / 8;
-
+  #if 0
   if (color) {
     _buffer[i] = (_buffer[i] | (1 << (7 - x % 8)));
     } else {
     _buffer[i] = (_buffer[i] & (0xFF ^ (1 << (7 - x % 8))));
     }
+  #else 
+  // This is the trick to draw colors right. Genious Jean-Marc
+  if (color) {
+    _buffer[i] = (_buffer[i] & (0xFF ^ (1 << (7 - x % 8))));
+    } else {
+    _buffer[i] = (_buffer[i] | (1 << (7 - x % 8)));
+    }
+
+  #endif
 }
 
 
@@ -569,13 +502,43 @@ void EcoSE2266::updateWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h, boo
 //		- INPUT:
 //			- array of image data to iterate on
 //			- size of array
-void EcoSE2266::fastUpdateTest(const unsigned char* fastImgSet[], uint8_t fastImgSize,uint8_t numLoops){
+void EcoSE2266::fastUpdate(){
+  uint8_t data[]={0};
+
+  
+
+  //First or previous frame
+  IO.cmd(0x10);       
+  IO.data(_previous_buffer,EcoSE2266_BUFFER_SIZE);
+  
+  //Second or new frame
+  IO.cmd(0x13);     
+  IO.data(_buffer,EcoSE2266_BUFFER_SIZE);
+
+  IO.cmd(0x50);
+  IO.data(ltb.data4,1); 
+
+  IO.cmd(0x12);
+  data[0]=0x0;
+  IO.data(data,1);
+  
+  memcpy(_previous_buffer,_buffer,EcoSE2266_BUFFER_SIZE);
+  vTaskDelay(50/portTICK_RATE_MS);
+  _waitBusy("refresh");
+}
+
+/**
+ * @brief Init fast update 
+ * 
+ */
+void EcoSE2266::fastUpdateInit(){
   //Turn off DC/DC
   uint8_t data[]={0};
   IO.cmd(0x02);
   data[0]=0x00;
   IO.data(data,1); 
   _waitBusy("fastTest");
+
 
    IO.cmd(0x00); 
   data[0]=0x0e;
@@ -588,12 +551,27 @@ void EcoSE2266::fastUpdateTest(const unsigned char* fastImgSet[], uint8_t fastIm
   data[0]=0x00;
   IO.data(data,1); 
   _waitBusy("DCDC");
+}
+
+// Fast Update function
+//		Implements fast update functionality
+//		- INPUT:
+//			- array of image data to iterate on
+//			- size of array
+void EcoSE2266::fastUpdateTest(const unsigned char* fastImgSet[], uint8_t fastImgSize,uint8_t numLoops){
+  //Turn off DC/DC
+  fastUpdateInit();
+
+  memcpy(_previous_buffer,fastImgSet[0],EcoSE2266_BUFFER_SIZE);
   uint8_t ii = 0;
 	while (ii < numLoops)
 	{
-		for (uint8_t j = 0; j < fastImgSize -1; j++)
+    #if 0
+		for (uint8_t j = 0; j < fastImgSize; j++)
 		{
+      #if 0
 		  //First or previous frame
+      uint8_t data[]={0};
 			IO.cmd(0x10);        
       IO.data(fastImgSet[j],EcoSE2266_BUFFER_SIZE);
       
@@ -609,12 +587,38 @@ void EcoSE2266::fastUpdateTest(const unsigned char* fastImgSet[], uint8_t fastIm
       IO.data(data,1);
       vTaskDelay(50/portTICK_RATE_MS);
       _waitBusy("refresh");
+      #elif 0
+      //memcpy(_previous_buffer,fastImgSet[j],EcoSE2266_BUFFER_SIZE);
+
+      memcpy(_buffer,fastImgSet[j+1],EcoSE2266_BUFFER_SIZE);
+      if(j>0){
+        printf("previous buff ==fastImgSet[j-1] ? : %d\n ", memcmp(_previous_buffer,fastImgSet[j-1],EcoSE2266_BUFFER_SIZE));
+      }
+      fastUpdate( );
+      
+      printf("previous buff ==fastImgSet[j] ? : %d\n ", memcmp(_previous_buffer,fastImgSet[j],EcoSE2266_BUFFER_SIZE));
+      
+      #elif 0
+      printf("previous buff ==fastImgSet[j] ? : %d\n ", memcmp(_previous_buffer,fastImgSet[j],EcoSE2266_BUFFER_SIZE));
+      #endif
 			
 		}
-		ii++;
+		
+    #endif
+    setCursor(20,30);
+    setTextColor(EPD_BLACK);
+    println("Hello !!");
+    fastUpdate( );
+  for (int i=0;i<20;i++){
+    drawPixel(i,10,EPD_BLACK);
+    fastUpdate( );
+  }
+  ii++;
 	}
+  
 
 }
+
 
 // Look-up table update function
 //		Enables fast update functionality

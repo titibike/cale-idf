@@ -81,16 +81,22 @@ void app_main(void)
    printf("end init \n");
    vTaskDelay(1000/portTICK_RATE_MS);
   
-   #if 1 
-   printf("test partial refresh");
-   display.globalUpdate(BW_monoBuffer, BW_0x00Buffer);
-
-   vTaskDelay(1000/portTICK_RATE_MS);
-   printf("test global refresh");
-
-   display.updateLUT(&ltb_custom); 
-   display.fastUpdateTest(fastImageSet, fastImageSet_Size,1);
+   #if 1
+   for (int i=0;i<4;i++){
+      vTaskDelay(200/portTICK_RATE_MS);
+      printf("test partial refresh\n");
+      display.fillScreen(EPD_WHITE);
+      display.globalUpdate(BW_monoBuffer, BW_0x00Buffer);
+      vTaskDelay(1000/portTICK_RATE_MS);
+      printf("test global refresh\n");
+      display.updateLUT(&ltb_custom);
+      printf("test partial refresh: %d\n",i); 
+      display.setRotation(i);
+      display.setFont(&Ubuntu_M12pt8b);
+      display.fastUpdateTest(fastImageSet, fastImageSet_Size,1);
+   }
    #endif
+
 
    #if 0
    printf(" Test Sushi \n");
@@ -110,34 +116,45 @@ void app_main(void)
     //display.setTextColor(EPD_BLACK);
     //display.setCursor(15,20);
     //display.println("B");
-    display.fillScreen(EPD_WHITE);
-    display.update();
+    display.globalUpdate(BW_monoBuffer, BW_0x00Buffer);
 
     //display.drawRect(10,10,22,20,EPD_BLACK);
     //display.update();
+     //Turn off DC/DC
    vTaskDelay(2000/portTICK_RATE_MS);  
-    
-    for (int i=0;i<20;i++){
-       display.drawPixel(i,10,EPD_WHITE);
-    }
+   display.fillScreen(EPD_WHITE);
    display.update();
 
+    display.updateLUT(&ltb_custom); 
+   display.fastUpdateInit();
+   
+   //vTaskDelay(2000/portTICK_RATE_MS);  
+
+   for (int i=0;i<20;i++){
+       display.drawPixel(i,10,EPD_WHITE);
+    }
+    display.fastUpdate();
+   printf("previous buff ==buffer ? : %d\n ", memcmp(display._previous_buffer,display._buffer,EcoSE2266_BUFFER_SIZE));
    for (int i=20;i<40;i++){
-       display.drawPixel(i,10,EPD_WHITE);
+       display.drawPixel(i,20,EPD_WHITE);
     }
-   display.update();
-
+  
+    printf("previous buff ==buffer ? : %d\n ", memcmp(display._previous_buffer,display._buffer,EcoSE2266_BUFFER_SIZE));
+   display.fastUpdate();
+ 
 
    for (int i=40;i<60;i++){
-       display.drawPixel(i,10,EPD_WHITE);
+       display.drawPixel(i,30,EPD_WHITE);
     }
-   display.update();
-   
+
+   display.fastUpdate();
 
    for (int i=60;i<100;i++){
-       display.drawPixel(i,10,EPD_WHITE);
+       display.drawPixel(i,40,EPD_WHITE);
     }
-   display.update();
+   display.fastUpdate(); 
+   vTaskDelay(200/portTICK_RATE_MS); 
+
   //display.updateWindow(0,0,EcoSE2266_WIDTH,EcoSE2266_HEIGHT);
    printf("\n end update windows \n");
    /*
