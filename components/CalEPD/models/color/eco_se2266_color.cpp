@@ -387,40 +387,38 @@ void EcoSE2266::testbuff(int a){
   } 
 }
 
-void EcoSE2266::initPartialUpdate(LUT_data ltc){
+void EcoSE2266::initFastUpdate(LUT_data ltc){
     uint8_t temp=16; 
 
     IO.cmd(0x00);  //Panel setting for fast partial
-    IO.data(ltc.data1,2);
+    IO.data(ltc.panelSet,2);
 
     IO.cmd(0X50);  //VCOM AND DATA INTERVAL SETTING
-    IO.data(ltc.data4,1); //WBmode:VBDF 17|D7 VBDW 97 VBDB 57   WBRmode:VBDF F7 VBDW 77 VBDB 37  VBDR B7
+    IO.data(ltc.vcomIntrval,1); 
 
-    IO.cmd(0x30); //PLL setting
-    IO.data(ltc.data14,1);   //90 50HZ  3A 100HZ   29 150Hz 39 200HZ 31 171HZ
+    IO.cmd(0x30); //PLL framerate
+    IO.data(ltc.PLLframert,1);   
 
     IO.cmd(0x82);  //vcom_DC setting
-    IO.data(ltc.data15,1);
+    IO.data(ltc.vcomDC,1);
   
   // send LUT
-
-	//_sendIndexData( 0x20, ltc.data8, temp );
    IO.cmd(0x20);  
-    IO.data(ltc.data8,temp);
-	//_sendIndexData( 0x23, ltc.data9, temp );
-IO.cmd(0x23);  
-    IO.data(ltc.data9,temp);
-	//_sendIndexData( 0x22, ltc.data10, temp );
+    IO.data(ltc.lutC,temp); //VCOM LUT(LUTC)
+  IO.cmd(0x23);  
+    IO.data(ltc.lutWb_W,temp); //W2B(LUTWB / LUTW)
+	
 IO.cmd(0x22);  
-    IO.data(ltc.data10,temp);
-	//_sendIndexData( 0x21, ltc.data11, temp );
+    IO.data(ltc.lutBW_R,temp); //B2W((LUTBW / LUTR)
+	
 	IO.cmd(0x21);  
-    IO.data(ltc.data11,temp);
-  //_sendIndexData( 0x24, ltc.data12, temp );
+    IO.data(ltc.lutWW,temp);//W2W(LUTWW) not available in BW mode  
+  
     IO.cmd(0x24);  
-    IO.data(ltc.data12,temp);
+    IO.data(ltc.lutBB_B,temp); //B2B(LUTBB / LUTB)
+
     if (debug_enabled) { 
-      printf("initPartialUpdate() LUT\n");
+      printf("initfastupdate() LUT\n");
     }
 }
 
@@ -505,8 +503,6 @@ void EcoSE2266::updateWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h, boo
 void EcoSE2266::fastUpdate(){
   uint8_t data[]={0};
 
-  
-
   //First or previous frame
   IO.cmd(0x10);       
   IO.data(_previous_buffer,EcoSE2266_BUFFER_SIZE);
@@ -516,7 +512,7 @@ void EcoSE2266::fastUpdate(){
   IO.data(_buffer,EcoSE2266_BUFFER_SIZE);
 
   IO.cmd(0x50);
-  IO.data(ltb.data4,1); 
+  IO.data(ltb.vcomIntrval,1); 
 
   IO.cmd(0x12);
   data[0]=0x0;
@@ -544,7 +540,7 @@ void EcoSE2266::fastUpdateInit(){
   data[0]=0x0e;
   IO.data(data,1); // Soft-reset
 
-  initPartialUpdate(ltb);
+  initFastUpdate(ltb);
 
   //DC DC Power on 
   IO.cmd(0x04);
@@ -628,4 +624,86 @@ void EcoSE2266::fastUpdateTest(const unsigned char* fastImgSet[], uint8_t fastIm
 void EcoSE2266::updateLUT(LUT_data *ltc)
 {
 	ltb = *ltc;
+}
+
+
+void EcoSE2266::initPartialUpdate(uint8_t partialImgConfig[5]){
+  uint8_t windowSource[2] = {};	// HRST, HRED
+	uint8_t windowGate[2] = {};	// VRST, VRED
+	
+	memcpy(windowSource, &partialImgConfig[1], sizeof(windowSource));
+	memcpy(windowGate, &partialImgConfig[3], sizeof(windowGate));
+
+  uint8_t PU_data[7];
+		PU_data[0] = (windowSource[0]<<3)&0xf8;     // source start
+		PU_data[1] = (windowSource[1]<<3)|0x07;     // source end
+		PU_data[2] = (windowGate[0]>>8)&0x01;       // Gate start MSB
+		PU_data[3] = windowGate[0]&0xff;            // Gate start LSB
+		PU_data[4] = (windowGate[1]>>8)&0x01;       // Gate end MSB
+		PU_data[5] = windowGate[1]&0xff;            // Gate end LSB
+		PU_data[6] = 0x01;
+    
+    IO.cmd(0x90);
+    IO.data(&PU_data[0],7);
+		
+    IO.cmd(0x91);
+    IO.data(&PU_data[0],0); //0x91 doesn’t have data
+} 
+
+#if 0
+void EcoSE2266::initHWPartialUpdate(){
+  //Turn off DC/DC
+  uint8_t data[]={0};
+  IO.cmd(0x02);
+  data[0]=0x00;
+  IO.data(data,1); 
+  _waitBusy("fastTest");
+
+
+   IO.cmd(0x00); 
+  data[0]=0x0e;
+  IO.data(data,1); // Soft-reset
+
+  initFastUpdate(ltb);
+
+  //DC DC Power on 
+  IO.cmd(0x04);
+  data[0]=0x00;
+  IO.data(data,1); 
+  _waitBusy("DCDC");
+}
+#endif
+void EcoSE2266::partialUpdateTest(const unsigned char* partialImgSet[], uint8_t partialImgConfig[5], long windowSize, uint8_t numLoops)
+{
+	//Turn off DC/DC
+  fastUpdateInit();
+	initPartialUpdate(partialImgConfig);
+
+	uint8_t i=0;
+	while (i < numLoops)
+	{
+		for (uint8_t j=0; j < partialImgConfig[0] -1; j++)
+		{
+
+       //First or previous frame
+      uint8_t data[]={0};
+			IO.cmd(0x10);        
+      IO.data(partialImgSet[j], windowSize);
+      
+      //Second or new frame
+			IO.cmd(0x13);     
+      IO.data(partialImgSet[j+1], windowSize);
+      
+      IO.cmd(0x50);
+      IO.data(ltb.vcomIntrval,1); 
+
+		  IO.cmd(0x12);
+      data[0]=0x0;
+      IO.data(data,1);
+      vTaskDelay(50/portTICK_RATE_MS);
+      _waitBusy("refresh");
+			
+		}
+		i++;
+	}
 }

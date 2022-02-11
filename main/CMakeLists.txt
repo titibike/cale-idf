@@ -23,6 +23,18 @@ idf_component_register(
      #SRCS "demo-sleep-clock-v2.cpp"
 
     SRCS "demos/demo-fonts.cpp" "demos/test_partial/bosch.c" "demos/test_partial/PS4.c" "demos/test_partial/redbull.c" "demos/test_partial/twinings.c" "demos/test_partial/image_266_296x152_BW.c"
+    "demos/test_partial/0.c" 
+    "demos/test_partial/1.c"
+    "demos/test_partial/2.c" 
+    "demos/test_partial/3.c"
+    "demos/test_partial/4.c" 
+    "demos/test_partial/5.c"
+    "demos/test_partial/6.c" 
+    "demos/test_partial/7.c"
+    "demos/test_partial/8.c" 
+    "demos/test_partial/9.c"
+    "demos/test_partial/b.c" 
+    "demos/test_partial/w.c" 
     #SRCS "demos/demo-ball.cpp"
 
     # Demo to print 7 colors in Waveshare Acep epapers

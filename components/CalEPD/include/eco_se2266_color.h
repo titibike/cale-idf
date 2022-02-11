@@ -34,16 +34,16 @@
 
 struct LUT_data
 {
-	uint8_t data1[2];
-	uint8_t data4[1];
-	uint8_t data15[1];
-	uint8_t data14[1];
-	uint8_t data8[42];
-	uint8_t data9[42];
-	uint8_t data10[42];
-	uint8_t data11[42];
-	uint8_t data12[42];
-	uint8_t data4_fix[1];
+	uint8_t panelSet[2];
+	uint8_t vcomIntrval[1];
+	uint8_t vcomDC[1];
+	uint8_t PLLframert[1];
+	uint8_t lutC[42];
+	uint8_t lutWb_W[42];
+	uint8_t lutBW_R[42];
+	uint8_t lutWW[42];
+	uint8_t lutBB_B[42];
+	uint8_t vcomIntrval_fix[1];
 };
 
 
@@ -66,8 +66,10 @@ class EcoSE2266 : public Epd
     void update();
     void _Fullreset(uint32_t ms1, uint32_t ms2, uint32_t ms3, uint32_t ms4, uint32_t ms5);
     void testbuff(int a);
-    void initPartialUpdate(LUT_data ltc);
+    void initFastUpdate(LUT_data ltc);
+    void initPartialUpdate(uint8_t partialImgConfig[5]);
     void fastUpdateTest(const unsigned char* fastImgSet[], uint8_t fastImgSize,uint8_t numLoops);
+    void partialUpdateTest(const unsigned char* partialImgSet[], uint8_t partialImgConfig[5], long windowSize, uint8_t numLoops);
     void updateLUT(LUT_data *ltc);
     void globalUpdate(const uint8_t * data1s, const uint8_t * data2s);
     void fastUpdate();

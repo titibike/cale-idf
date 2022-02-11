@@ -81,7 +81,7 @@ void app_main(void)
    printf("end init \n");
    vTaskDelay(100/portTICK_RATE_MS);
    char data_char[100];
-   #if 1
+   #if 0
    
       vTaskDelay(200/portTICK_RATE_MS);
       printf("test partial refresh\n");
@@ -111,6 +111,23 @@ void app_main(void)
    }
    #endif
 
+   #if 1 /* Partial*/
+   
+      vTaskDelay(200/portTICK_RATE_MS);
+      printf("test partial refresh\n");
+      display.fillScreen(EPD_WHITE);
+      //display.globalUpdate(BW_monoBuffer, BW_0x00Buffer);
+      display.update();
+      vTaskDelay(1000/portTICK_RATE_MS);
+      printf("test global refresh\n");
+      display.updateLUT(&ltb_custom);
+      display.fastUpdateInit();
+
+      for(int i=0;i<50000;i++){
+         display.partialUpdateTest(partialImageSet, partialImageSet_config, partialWindowSize, 1);
+  }
+   
+   #endif
 
    #if 0
    printf(" Test Sushi \n");
