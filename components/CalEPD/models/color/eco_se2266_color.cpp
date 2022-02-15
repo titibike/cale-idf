@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include "esp_log.h"
 #include "freertos/task.h"
+#include <math.h> 
 
 // Controller: Aurora MB EC2266
 // Specification: https://www.pervasivedisplays.com/wp-content/uploads/2019/06/ApplicationNote_Small_Size_Mono_v01_181022-6.pdf
@@ -97,6 +98,68 @@ LUT_data ltb_custom2 = {
 	{0x01, 0x01, 5, 5, 0x01, 9, 1, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
 	{0x27}
 };
+
+/* test to delete after */
+unsigned char const Img_3[]= {
+//Image Name: 3.bmp ; Width: 40 ; Height: 56
+0x00,0x00,0x00,0x00,0x00, // 1
+0x00,0x00,0x00,0x00,0x00, // 2
+0x00,0x00,0x00,0x00,0x00, // 3
+0x00,0x00,0x00,0x00,0x00, // 4
+0x00,0x00,0x00,0x00,0x00, // 5
+0x00,0x00,0x00,0x00,0x00, // 6
+0x01,0xff,0xff,0xff,0x00, // 7
+0x03,0xff,0xff,0xff,0x80, // 8
+0x03,0xff,0xff,0xff,0xc0, // 9
+0x03,0xff,0xff,0xff,0xe0, // 10
+0x03,0xff,0xff,0xff,0xe0, // 11
+0x01,0xff,0xff,0xff,0xe0, // 12
+0x00,0x00,0x00,0x07,0xe0, // 13
+0x00,0x00,0x00,0x07,0xe0, // 14
+0x00,0x00,0x00,0x07,0xe0, // 15
+0x00,0x00,0x00,0x07,0xe0, // 16
+0x00,0x00,0x00,0x07,0xe0, // 17
+0x00,0x00,0x00,0x07,0xe0, // 18
+0x00,0x00,0x00,0x07,0xe0, // 19
+0x00,0x00,0x00,0x07,0xe0, // 20
+0x00,0x00,0x00,0x07,0xe0, // 21
+0x00,0x00,0x00,0x07,0xe0, // 22
+0x00,0x00,0x00,0x07,0xe0, // 23
+0x00,0x00,0x00,0x07,0xe0, // 24
+0x00,0x00,0x00,0x07,0xe0, // 25
+0x00,0x00,0x00,0x0f,0xe0, // 26
+0x00,0x07,0xff,0xff,0xc0, // 27
+0x00,0x0f,0xff,0xff,0xc0, // 28
+0x00,0x0f,0xff,0xff,0x80, // 29
+0x00,0x0f,0xff,0xff,0x80, // 30
+0x00,0x0f,0xff,0xff,0xc0, // 31
+0x00,0x07,0xff,0xff,0xc0, // 32
+0x00,0x00,0x00,0x0f,0xe0, // 33
+0x00,0x00,0x00,0x07,0xe0, // 34
+0x00,0x00,0x00,0x07,0xe0, // 35
+0x00,0x00,0x00,0x07,0xe0, // 36
+0x00,0x00,0x00,0x07,0xe0, // 37
+0x00,0x00,0x00,0x07,0xe0, // 38
+0x00,0x00,0x00,0x07,0xe0, // 39
+0x00,0x00,0x00,0x07,0xe0, // 40
+0x00,0x00,0x00,0x07,0xe0, // 41
+0x00,0x00,0x00,0x07,0xe0, // 42
+0x00,0x00,0x00,0x07,0xe0, // 43
+0x00,0x00,0x00,0x07,0xe0, // 44
+0x00,0x00,0x00,0x07,0xe0, // 45
+0x01,0xff,0xff,0xff,0xe0, // 46
+0x03,0xff,0xff,0xff,0xe0, // 47
+0x03,0xff,0xff,0xff,0xe0, // 48
+0x03,0xff,0xff,0xff,0xc0, // 49
+0x03,0xff,0xff,0xff,0x80, // 50
+0x01,0xff,0xff,0xff,0x00, // 51
+0x00,0x00,0x00,0x00,0x00, // 52
+0x00,0x00,0x00,0x00,0x00, // 53
+0x00,0x00,0x00,0x00,0x00, // 54
+0x00,0x00,0x00,0x00,0x00, // 55
+0x00,0x00,0x00,0x00,0x00, // 56
+};
+
 // Constructor
 EcoSE2266::EcoSE2266(EpdSpi &dio) : Adafruit_GFX(EcoSE2266_WIDTH, EcoSE2266_HEIGHT),
                                     Epd(EcoSE2266_WIDTH, EcoSE2266_HEIGHT), IO(dio)
@@ -457,26 +520,158 @@ void EcoSE2266::_refreshWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h)
 
 void EcoSE2266::_writeToWindow(uint8_t command, uint16_t xs, uint16_t ys, uint16_t xd, uint16_t yd, uint16_t w, uint16_t h)
 {
-  //Serial.printf("_writeToWindow(%d, %d, %d, %d, %d, %d)\n", xs, ys, xd, yd, w, h);
+  uint8_t datacmd[]={0};
+  int size_window=(w*h)/8; 
+  uint8_t * data=NULL;
+  data= (uint8_t *) malloc(size_window*sizeof(uint8_t));
+  uint16_t idx=0;
+  int cpt=0; 
   // the screen limits are the hard limits
   if (xs >= EcoSE2266_WIDTH) return;
   if (ys >= EcoSE2266_HEIGHT) return;
   if (xd >= EcoSE2266_WIDTH) return;
   if (yd >= EcoSE2266_HEIGHT) return;
-  w = gx_uint16_min(w + 7, EcoSE2266_WIDTH - xd) + (xd % 8);
-  h = gx_uint16_min(h, EcoSE2266_HEIGHT - yd);
-  uint16_t xe = (xs / 8) + (w / 8);
-  IO.cmd(0x91); // partial in
-  _partialRamArea(command, xd, yd, w, h);
-  for (uint16_t y1 = ys; y1 < ys + h; y1++)
+
+
+  /* simulate x,y ,w ,h  0x07, 0x0b, 0x32 ,0x6a */
+  /*
+uint16_t xs=56; 
+uint16_t ys=50;  
+uint16_t xd=96; 
+uint16_t yd=106;  
+uint16_t w=40; 
+uint16_t h=56;  */
+   uint8_t windowSource[2] = {};	// HRST, HRED
+	uint8_t windowGate[2] = {};	// VRST, VRED
+
+  uint8_t x_start=floor(xs/8);
+   //w = gx_uint16_min(w + 7, EcoSE2266_WIDTH - xd) + (xd % 8);
+   //h = gx_uint16_min(h, EcoSE2266_HEIGHT - yd);
+  uint8_t x_end=floor( ( (w+xs)/8) -1 );
+  uint y_start= ys; 
+  uint y_end=h+ys;
+  uint16_t xe = ((xs +w )/ 8);
+
+  windowSource[0]=x_start;
+  windowSource[1]=x_end;
+  windowGate[0]=y_start;
+  windowGate[1]=y_end;
+
+  printf("w :%d h :%d HRST:%0x HRED:%0x VRST:%0x VRED:%0x\n xe:%d",w,h,x_start,x_end,y_start,y_end,xe);
+  uint8_t PU_data[7];
+		PU_data[0] = (windowSource[0]<<3)&0xf8;     // source start
+		PU_data[1] = (windowSource[1]<<3)|0x07;     // source end
+		PU_data[2] = (windowGate[0]>>8)&0x01;       // Gate start MSB
+		PU_data[3] = windowGate[0]&0xff;            // Gate start LSB
+		PU_data[4] = (windowGate[1]>>8)&0x01;       // Gate end MSB
+		PU_data[5] = windowGate[1]&0xff;            // Gate end LSB
+		PU_data[6] = 0x01;
+    
+    IO.cmd(0x90);
+    IO.data(&PU_data[0],7);
+		
+    IO.cmd(0x91);
+    IO.data(&PU_data[0],0); //0x91 doesn’t have data
+
+  /* end Example code */
+  #if 0
+  if ((xs < 0) || (xs >= width()) || (ys < 0) || (ys >= height()))
+    return;
+  switch (getRotation())
   {
-    for (uint16_t x1 = xs / 8; x1 < xe; x1++)
-    {
-      uint16_t idx = y1 * (EcoSE2266_WIDTH / 8) + x1;
-      uint8_t data = (idx < sizeof(_buffer)) ? _buffer[idx] : 0x00;
-      IO.data(~data);
-    }
+  case 1:
+    swap(xs, ys);
+    xs = EcoSE2266_WIDTH - xs - 1;
+    break;
+  case 2:
+    xs = EcoSE2266_WIDTH - xs - 1;
+    ys = EcoSE2266_HEIGHT - ys - 1;
+    break;
+  case 3:
+    swap(xs, ys);
+    ys = EcoSE2266_HEIGHT - ys - 1;
+    break;
   }
+  idx = xs / 8 + ys * EcoSE2266_WIDTH / 8;
+  #endif
+/* **/
+
+  #if 1
+  
+  memcpy(_previous_buffer,_buffer,EcoSE2266_BUFFER_SIZE);
+
+  for(int a=0;a<size_window;a++){
+    data[a]=0;
+  }
+  /* Construct the data buffer to send */
+
+  /* Try with memcpy */
+  #if 0
+   idx = xe + ys * (EcoSE2266_WIDTH / 8);
+   for(int b=idx;b<size_window;b++){
+    if(cpt<size_window){
+      data[cpt]=_buffer[b];
+      printf("data[%d]:%0x buffer[%d]:%0x\n",cpt,data[cpt],b,_buffer[b]);
+    }
+    cpt++;
+  }
+  printf("idx:%d \n",idx);
+ #else 
+  for (uint16_t y1 = ys; y1 <= ys +h; y1++)
+  {
+    for (uint16_t x1 = xs / 8; x1 <= xe; x1++)
+    {
+       idx = y1 * (EcoSE2266_WIDTH / 8 ) + x1;
+       
+       if (idx < sizeof(_buffer)) {
+         data[cpt]=_buffer[idx] ;
+          memcpy(_previous_buffer,_buffer,EcoSE2266_BUFFER_SIZE);
+          if(data[cpt] !=0){
+         printf("x1: %d y1: %d _buffer[%d]:%0x \t data[%d]:%0x \n",x1,y1,idx,_buffer[idx],cpt,data[cpt]);
+          }
+          
+       } 
+      /** **/
+    }
+    cpt++; 
+  }
+  #endif
+    //memcpy(data,Img_3,size_window);
+    //memcpy(data_previous,Img_3,size_window);
+
+      IO.cmd(0x10);       
+      /* Don't send data to*/
+      
+      //Second or new frame
+      IO.cmd(0x13);     
+      for(int a=0;a<size_window;a++){
+        IO.data(data[a]);
+      }
+      
+
+
+      IO.cmd(0x50);
+      IO.data(ltb.vcomIntrval,1); 
+
+      IO.cmd(0x12);
+      datacmd[0]=0x0;
+      IO.data(datacmd,1);
+
+      memcpy(_previous_buffer,_buffer,EcoSE2266_BUFFER_SIZE);
+      vTaskDelay(50/portTICK_RATE_MS);
+      _waitBusy("refresh");
+  #endif
+  printf("Data window : \n");
+  int a=0;
+  #if 0
+  for(int b=0;b<EcoSE2266_BUFFER_SIZE;b++){
+    if(a >= 4186){
+      a++;
+    }
+    printf("data[%d]:%0x buffer[%d]:%0x\n",a,data[a],b,_buffer[b]);
+  }
+  #endif
+  printf("\n");
   vTaskDelay(pdMS_TO_TICKS(2));
 }
 
@@ -486,11 +681,13 @@ void EcoSE2266::updateWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h, boo
   // Only if sleep state is true:
   //if (!_using_partial_mode) _wakeUp();
   _using_partial_mode = true;
-  //initPartialUpdate();
+  fastUpdateInit();
   _writeToWindow(0x15, x, y, x, y, w, h);
+  _waitBusy("updateWindow");
+  /*
   _refreshWindow(x, y, w, h);   
   _waitBusy("updateWindow");
-  _writeToWindow(0x14, x, y, x, y, w, h);
+  _writeToWindow(0x14, x, y, x, y, w, h);*/
 }
 
 
@@ -529,6 +726,7 @@ void EcoSE2266::fastUpdate(){
  */
 void EcoSE2266::fastUpdateInit(){
   //Turn off DC/DC
+  printf("\nfastUpdateInit\n");
   uint8_t data[]={0};
   IO.cmd(0x02);
   data[0]=0x00;
@@ -628,6 +826,51 @@ void EcoSE2266::updateLUT(LUT_data *ltc)
 
 
 void EcoSE2266::initPartialUpdate(uint8_t partialImgConfig[5]){
+/* Example code*/
+
+#if 0
+  /* simulate x,y ,w ,h  0x07, 0x0b, 0x32 ,0x6a */
+uint16_t xs=56; 
+uint16_t ys=50;  
+uint16_t xd=96; 
+uint16_t yd=106;  
+uint16_t w=40; 
+uint16_t h=56; 
+   uint8_t windowSource[2] = {};	// HRST, HRED
+	uint8_t windowGate[2] = {};	// VRST, VRED
+
+  uint8_t hrst=floor(xs/8);
+   //w = gx_uint16_min(w + 7, EcoSE2266_WIDTH - xd) + (xd % 8);
+   //h = gx_uint16_min(h, EcoSE2266_HEIGHT - yd);
+  uint8_t hred=floor( ( (w+xs)/8) -1 );
+  uint vrst= ys; 
+  uint vred=h+ys;
+  
+  windowSource[0]=hrst;
+  windowSource[1]=hred;
+  windowGate[0]=vrst;
+  windowGate[1]=vred;
+
+  printf("w :%d h :%d HRST:%0x HRED:%0x VRST:%0x VRED:%0x\n",w,h,hrst,hred,vrst,vred);
+  uint8_t PU_data[7];
+		PU_data[0] = (windowSource[0]<<3)&0xf8;     // source start
+		PU_data[1] = (windowSource[1]<<3)|0x07;     // source end
+		PU_data[2] = (windowGate[0]>>8)&0x01;       // Gate start MSB
+		PU_data[3] = windowGate[0]&0xff;            // Gate start LSB
+		PU_data[4] = (windowGate[1]>>8)&0x01;       // Gate end MSB
+		PU_data[5] = windowGate[1]&0xff;            // Gate end LSB
+		PU_data[6] = 0x01;
+    
+    IO.cmd(0x90);
+    IO.data(&PU_data[0],7);
+		
+    IO.cmd(0x91);
+    IO.data(&PU_data[0],0); //0x91 doesn’t have data
+
+  
+  /* end Example code */
+#else
+
   uint8_t windowSource[2] = {};	// HRST, HRED
 	uint8_t windowGate[2] = {};	// VRST, VRED
 	
@@ -646,8 +889,8 @@ void EcoSE2266::initPartialUpdate(uint8_t partialImgConfig[5]){
     IO.cmd(0x90);
     IO.data(&PU_data[0],7);
 		
-    IO.cmd(0x91);
-    IO.data(&PU_data[0],0); //0x91 doesn’t have data
+    IO.cmd(0x91); //0x91 doesn’t have data
+#endif
 } 
 
 #if 0
@@ -677,8 +920,9 @@ void EcoSE2266::partialUpdateTest(const unsigned char* partialImgSet[], uint8_t 
 {
 	//Turn off DC/DC
   fastUpdateInit();
-	initPartialUpdate(partialImgConfig);
+	//initPartialUpdate(partialImgConfig);
 
+  updateWindow(56,50,40,56,false);
 	uint8_t i=0;
 	while (i < numLoops)
 	{
@@ -707,3 +951,87 @@ void EcoSE2266::partialUpdateTest(const unsigned char* partialImgSet[], uint8_t 
 		i++;
 	}
 }
+
+void EcoSE2266::printBuffer(){
+  printf("Buffer : \n");
+  for (int i=0; i<EcoSE2266_BUFFER_SIZE;i++){
+    if (_buffer[i]!=0){
+    printf("Buffer[%d]:%0x\n",i,_buffer[i]);
+    }
+
+  }
+  printf("End Buffer \n");
+}
+
+#if 0
+void EcoSE2266::partialUpdate(const unsigned char* partialImgSet[], uint8_t partialImgConfig[5], long windowSize, uint8_t numLoops)
+{
+	
+    uint8_t data[]={0};
+
+  //First or previous frame
+  IO.cmd(0x10);       
+  IO.data(_previous_buffer,windowSize);
+  
+  //Second or new frame
+  IO.cmd(0x13);     
+  IO.data(_buffer,windowSize);
+
+  IO.cmd(0x50);
+  IO.data(ltb.vcomIntrval,1); 
+
+  IO.cmd(0x12);
+  data[0]=0x0;
+  IO.data(data,1);
+  
+  memcpy(_previous_buffer,_buffer,EcoSE2266_BUFFER_SIZE);
+  vTaskDelay(50/portTICK_RATE_MS);
+  _waitBusy("refresh");
+	uint8_t i=0;
+	while (i < numLoops)
+	{
+		for (uint8_t j=0; j < partialImgConfig[0] -1; j++)
+		{
+      #if 0
+       //First or previous frame
+      uint8_t data[]={0};
+			IO.cmd(0x10);        
+      IO.data(partialImgSet[j], windowSize);
+      
+      //Second or new frame
+			IO.cmd(0x13);     
+      IO.data(partialImgSet[j+1], windowSize);
+      
+      IO.cmd(0x50);
+      IO.data(ltb.vcomIntrval,1); 
+
+		  IO.cmd(0x12);
+      data[0]=0x0;
+      IO.data(data,1);
+      vTaskDelay(50/portTICK_RATE_MS);
+      _waitBusy("refresh");
+			#else 
+      //First or previous frame
+      IO.cmd(0x10);       
+      IO.data(_previous_buffer,windowSize);
+      
+      //Second or new frame
+      IO.cmd(0x13);     
+      IO.data(_buffer,windowSize);
+
+      IO.cmd(0x50);
+      IO.data(ltb.vcomIntrval,1); 
+
+      IO.cmd(0x12);
+      data[0]=0x0;
+      IO.data(data,1);
+      
+      memcpy(_previous_buffer,_buffer,EcoSE2266_BUFFER_SIZE);
+      vTaskDelay(50/portTICK_RATE_MS);
+      _waitBusy("refresh");
+      #endif
+		}
+		i++;
+	}
+}
+#endif

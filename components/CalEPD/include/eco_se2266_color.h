@@ -74,6 +74,7 @@ class EcoSE2266 : public Epd
     void globalUpdate(const uint8_t * data1s, const uint8_t * data2s);
     void fastUpdate();
     void fastUpdateInit();
+    void printBuffer();
   private:
     EpdSpi& IO;
 

@@ -149,7 +149,7 @@ void EpdSpi::data(const uint8_t *data, int len)
     if (debug_enabled && true) {
         printf("D\n");
         for (int i = 0; i < len; i++)  {
-            printf("%x ",data[i]);
+            printf("%x : %d \n",data[i],i);
         }
         printf("\n");
     }

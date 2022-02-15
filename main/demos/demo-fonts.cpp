@@ -122,10 +122,37 @@ void app_main(void)
       printf("test global refresh\n");
       display.updateLUT(&ltb_custom);
       display.fastUpdateInit();
-
+      display.setTextColor(EPD_BLACK);
+      display.setFont(&Ubuntu_M12pt8b);
+      display.setCursor(56,50);
+      //display.println("O");
+      //display.printBuffer();
+      printf("draw rect\n");
+      int w= 20;
+      int h=20; 
+      int x=10;
+      int y=10;
+      //display.drawRect(x,y,w,h,EPD_BLACK);
+      //display.printBuffer();
+      //for (int c=0;c<4;c++){
+      display.fillScreen(EPD_WHITE);
+      display.update();
+        display.setRotation(3);
+         display.drawRect(x,y,w,h,EPD_BLACK);
+         //display.update();
+         //display.printBuffer();
+         display.updateWindow(x,y,w,h,true);
+      //}
+      #if 0
       for(int i=0;i<50000;i++){
-         display.partialUpdateTest(partialImageSet, partialImageSet_config, partialWindowSize, 1);
-  }
+         sprintf(data_char,"%d",i);
+         printf("char: %s\n",data_char);
+         display.println(data_char);
+         display.updateWindow(56,50,40,56,false);
+         //display.fastUpdate();
+         //display.partialUpdateTest(partialImageSet, partialImageSet_config, partialWindowSize, 1);
+      }
+      #endif
    
    #endif
 
