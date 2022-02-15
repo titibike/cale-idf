@@ -522,6 +522,11 @@ void EcoSE2266::_writeToWindow(uint8_t command, uint16_t xs, uint16_t ys, uint16
 {
   uint8_t datacmd[]={0};
   int size_window=(w*h)/8; 
+  uint8_t x_start=0;
+  uint8_t x_end=0;
+  uint y_start=0; 
+  uint y_end=0;
+
   uint8_t * data=NULL;
   data= (uint8_t *) malloc(size_window*sizeof(uint8_t));
   uint16_t idx=0;
@@ -544,20 +549,30 @@ uint16_t h=56;  */
    uint8_t windowSource[2] = {};	// HRST, HRED
 	uint8_t windowGate[2] = {};	// VRST, VRED
 
-  uint8_t x_start=floor(xs/8);
+  
+  x_start=(xs % 8 == 0)? (xs): (xs/8*8+8);
+   w = gx_uint16_min(w + 7, EcoSE2266_WIDTH - xd) + (xd % 8);
+   h = gx_uint16_min(h, EcoSE2266_HEIGHT - yd);
+   x_end=( (xs+w) % 8 == 0)? (xs+w): ( (xs+w)/8*8+8);
+  y_start= ys; 
+ y_end=h+ys;
+
+  uint8_t h_start=floor(xs/8);
    //w = gx_uint16_min(w + 7, EcoSE2266_WIDTH - xd) + (xd % 8);
    //h = gx_uint16_min(h, EcoSE2266_HEIGHT - yd);
-  uint8_t x_end=floor( ( (w+xs)/8) -1 );
-  uint y_start= ys; 
-  uint y_end=h+ys;
+  uint8_t h_end=floor( ( (w+xs)/8) -1 );
+  uint8_t v_start= ys; 
+   uint8_t v_end=h+ys;
+ 
+
   uint16_t xe = ((xs +w )/ 8);
 
-  windowSource[0]=x_start;
-  windowSource[1]=x_end;
-  windowGate[0]=y_start;
-  windowGate[1]=y_end;
+  windowSource[0]=h_start;
+  windowSource[1]=h_end;
+  windowGate[0]=v_start;
+  windowGate[1]=v_end;
 
-  printf("w :%d h :%d HRST:%0x HRED:%0x VRST:%0x VRED:%0x\n xe:%d",w,h,x_start,x_end,y_start,y_end,xe);
+  printf("w :%d h :%d x_start:%0x x_end:%0x y_start:%0x y_end:%0x\n xe:%d",w,h,x_start,x_end,y_start,y_end,xe);
   uint8_t PU_data[7];
 		PU_data[0] = (windowSource[0]<<3)&0xf8;     // source start
 		PU_data[1] = (windowSource[1]<<3)|0x07;     // source end
@@ -574,26 +589,7 @@ uint16_t h=56;  */
     IO.data(&PU_data[0],0); //0x91 doesn’t have data
 
   /* end Example code */
-  #if 0
-  if ((xs < 0) || (xs >= width()) || (ys < 0) || (ys >= height()))
-    return;
-  switch (getRotation())
-  {
-  case 1:
-    swap(xs, ys);
-    xs = EcoSE2266_WIDTH - xs - 1;
-    break;
-  case 2:
-    xs = EcoSE2266_WIDTH - xs - 1;
-    ys = EcoSE2266_HEIGHT - ys - 1;
-    break;
-  case 3:
-    swap(xs, ys);
-    ys = EcoSE2266_HEIGHT - ys - 1;
-    break;
-  }
-  idx = xs / 8 + ys * EcoSE2266_WIDTH / 8;
-  #endif
+  
 /* **/
 
   #if 1
@@ -617,21 +613,29 @@ uint16_t h=56;  */
   }
   printf("idx:%d \n",idx);
  #else 
-  for (uint16_t y1 = ys; y1 <= ys +h; y1++)
+  IO.cmd(0x10);     
+
+  IO.cmd(0x13);
+  for (uint16_t y1 = ys; y1 < ys+h; y1++)
   {
-    for (uint16_t x1 = xs / 8; x1 <= xe; x1++)
+    for (uint16_t x1 = xs/8; x1 < xe; x1++)
     {
        idx = y1 * (EcoSE2266_WIDTH / 8 ) + x1;
        
        if (idx < sizeof(_buffer)) {
          data[cpt]=_buffer[idx] ;
           memcpy(_previous_buffer,_buffer,EcoSE2266_BUFFER_SIZE);
-          if(data[cpt] !=0){
-         printf("x1: %d y1: %d _buffer[%d]:%0x \t data[%d]:%0x \n",x1,y1,idx,_buffer[idx],cpt,data[cpt]);
-          }
-          
+          //if(data[cpt] !=0){
+            printf("x1: %d y1: %d _buffer[%d]:%0x \t data[%d]:%0x \n",x1,y1,idx,_buffer[idx],cpt,data[cpt]);
+          //}
        } 
+       else {
+         printf("DATA 0\n");
+         data[cpt]=0x00;
+       }
+       IO.data(_buffer[idx]);
       /** **/
+      cpt++;
     }
     cpt++; 
   }
@@ -639,6 +643,7 @@ uint16_t h=56;  */
     //memcpy(data,Img_3,size_window);
     //memcpy(data_previous,Img_3,size_window);
 
+    #if 0 /* try to send directly in the loop*/
       IO.cmd(0x10);       
       /* Don't send data to*/
       
@@ -647,7 +652,7 @@ uint16_t h=56;  */
       for(int a=0;a<size_window;a++){
         IO.data(data[a]);
       }
-      
+      #endif
 
 
       IO.cmd(0x50);

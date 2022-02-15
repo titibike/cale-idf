@@ -130,14 +130,14 @@ void app_main(void)
       printf("draw rect\n");
       int w= 20;
       int h=20; 
-      int x=10;
-      int y=10;
+      int x=8;
+      int y=8;
       //display.drawRect(x,y,w,h,EPD_BLACK);
       //display.printBuffer();
       //for (int c=0;c<4;c++){
       display.fillScreen(EPD_WHITE);
       display.update();
-        display.setRotation(3);
+        display.setRotation(0);
          display.drawRect(x,y,w,h,EPD_BLACK);
          //display.update();
          //display.printBuffer();
