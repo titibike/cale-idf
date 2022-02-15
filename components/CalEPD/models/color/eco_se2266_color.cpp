@@ -537,6 +537,25 @@ void EcoSE2266::_writeToWindow(uint8_t command, uint16_t xs, uint16_t ys, uint16
   if (xd >= EcoSE2266_WIDTH) return;
   if (yd >= EcoSE2266_HEIGHT) return;
 
+  #if 0
+  if ((xs < 0) || (xs >= width()) || (ys < 0) || (ys >= height()))
+    return;
+  switch (getRotation())
+  {
+  case 1:
+    swap(xs, ys);
+    xs = EcoSE2266_WIDTH - xs - 1;
+    break;
+  case 2:
+    xs = EcoSE2266_WIDTH - xs - 1;
+    ys = EcoSE2266_HEIGHT - ys - 1;
+    break;
+  case 3:
+    swap(xs, ys);
+    ys = EcoSE2266_HEIGHT - ys - 1;
+    break;
+  }
+  #endif
 
   /* simulate x,y ,w ,h  0x07, 0x0b, 0x32 ,0x6a */
   /*
@@ -557,10 +576,14 @@ uint16_t h=56;  */
   y_start= ys; 
  y_end=h+ys;
 
+
+#if 1
+uint8_t h_start=((xs)/8);
+uint8_t h_end=  ( ((w+xs-8) /8) );
+#else
   uint8_t h_start=floor(xs/8);
-   //w = gx_uint16_min(w + 7, EcoSE2266_WIDTH - xd) + (xd % 8);
-   //h = gx_uint16_min(h, EcoSE2266_HEIGHT - yd);
-  uint8_t h_end=floor( ( (w+xs)/8) -1 );
+  uint8_t h_end=floor( ( (w+xs)/8)  -1);
+  #endif
   uint8_t v_start= ys; 
    uint8_t v_end=h+ys;
  
@@ -582,6 +605,13 @@ uint16_t h=56;  */
 		PU_data[5] = windowGate[1]&0xff;            // Gate end LSB
 		PU_data[6] = 0x01;
     
+    printf("\n H_start:%d H_end:%d V_start:%d V_end:%d \n",h_start,h_end,v_start,v_end);
+    
+    printf("PU_data:\n");
+    for (int i=0;i<7;i++){
+      printf("PU_data[%d]:%d\n",i,PU_data[i]);
+    }
+  
     IO.cmd(0x90);
     IO.data(&PU_data[0],7);
 		
@@ -667,7 +697,11 @@ uint16_t h=56;  */
 
 void EcoSE2266::updateWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h, bool using_rotation)
 {
+
+  printf("\n before rotate x:%d y:%d w:%d h : %d \n",x, y, w, h);
+
   if (using_rotation) _rotate(x, y, w, h);
+  printf("\n after rotate x:%d y:%d w:%d h : %d \n",x, y, w, h);
   // Only if sleep state is true:
   //if (!_using_partial_mode) _wakeUp();
   _using_partial_mode = true;

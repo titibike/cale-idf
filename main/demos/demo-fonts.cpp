@@ -128,15 +128,23 @@ void app_main(void)
       //display.println("O");
       //display.printBuffer();
       printf("draw rect\n");
-      int w= 120;
-      int h=40; 
-      int x=14;
-      int y=40;
+      int w= 8;
+      int h=16; 
+      int x=1;
+      int y=1;
+      display.setRotation(0);
+
       display.setCursor(x+2,y+h);
       //display.drawRect(x,y,w,h,EPD_BLACK);
-      //display.printBuffer();
+      display.printBuffer();
       strcpy(data_char,"EcoVelo!");
       display.drawRect(x,y,w,h,EPD_BLACK);
+      display.printBuffer();
+      display.update();
+      vTaskDelay(2000/portTICK_RATE_MS);
+      display.updateWindow(x,y,w,h,true);
+      //display.updateWindow(x,y,w,h,false);
+      #if 0
       int offset=2;
       uint8_t my_char=0;
       for (int c=0;c<strlen("EcoVelo!");c++){
@@ -148,6 +156,7 @@ void app_main(void)
           offset+=14;
           //display.update();
       }
+      #endif
       #if 0
       for(int i=0;i<50000;i++){
          sprintf(data_char,"%d",i);
