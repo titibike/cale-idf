@@ -527,8 +527,8 @@ void EcoSE2266::_writeToWindow(uint8_t command, uint16_t xs, uint16_t ys, uint16
   uint y_start=0; 
   uint y_end=0;
 
-  uint8_t * data=NULL;
-  data= (uint8_t *) malloc(size_window*sizeof(uint8_t));
+  //uint8_t * data=NULL;
+  //data= (uint8_t *) malloc(size_window*sizeof(uint8_t));
   uint16_t idx=0;
   int cpt=0; 
   // the screen limits are the hard limits
@@ -593,12 +593,10 @@ uint16_t h=56;  */
 /* **/
 
   #if 1
-  
-  memcpy(_previous_buffer,_buffer,EcoSE2266_BUFFER_SIZE);
 
-  for(int a=0;a<size_window;a++){
-    data[a]=0;
-  }
+  //for(int a=0;a<size_window;a++){
+   // data[a]=0;
+  //}
   /* Construct the data buffer to send */
 
   /* Try with memcpy */
@@ -621,23 +619,10 @@ uint16_t h=56;  */
     for (uint16_t x1 = xs/8; x1 < xe; x1++)
     {
        idx = y1 * (EcoSE2266_WIDTH / 8 ) + x1;
-       
        if (idx < sizeof(_buffer)) {
-         data[cpt]=_buffer[idx] ;
-          memcpy(_previous_buffer,_buffer,EcoSE2266_BUFFER_SIZE);
-          //if(data[cpt] !=0){
-            printf("x1: %d y1: %d _buffer[%d]:%0x \t data[%d]:%0x \n",x1,y1,idx,_buffer[idx],cpt,data[cpt]);
-          //}
-       } 
-       else {
-         printf("DATA 0\n");
-         data[cpt]=0x00;
+        IO.data(_buffer[idx]);
        }
-       IO.data(_buffer[idx]);
-      /** **/
-      cpt++;
     }
-    cpt++; 
   }
   #endif
     //memcpy(data,Img_3,size_window);
@@ -663,7 +648,7 @@ uint16_t h=56;  */
       IO.data(datacmd,1);
 
       memcpy(_previous_buffer,_buffer,EcoSE2266_BUFFER_SIZE);
-      vTaskDelay(50/portTICK_RATE_MS);
+      vTaskDelay(20/portTICK_RATE_MS);
       _waitBusy("refresh");
   #endif
   printf("Data window : \n");

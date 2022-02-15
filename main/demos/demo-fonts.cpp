@@ -124,25 +124,30 @@ void app_main(void)
       display.fastUpdateInit();
       display.setTextColor(EPD_BLACK);
       display.setFont(&Ubuntu_M12pt8b);
-      display.setCursor(56,50);
+      
       //display.println("O");
       //display.printBuffer();
       printf("draw rect\n");
-      int w= 20;
-      int h=20; 
-      int x=8;
-      int y=8;
+      int w= 120;
+      int h=40; 
+      int x=14;
+      int y=40;
+      display.setCursor(x+2,y+h);
       //display.drawRect(x,y,w,h,EPD_BLACK);
       //display.printBuffer();
-      //for (int c=0;c<4;c++){
-      display.fillScreen(EPD_WHITE);
-      display.update();
-        display.setRotation(0);
-         display.drawRect(x,y,w,h,EPD_BLACK);
-         //display.update();
-         //display.printBuffer();
-         display.updateWindow(x,y,w,h,true);
-      //}
+      strcpy(data_char,"EcoVelo!");
+      display.drawRect(x,y,w,h,EPD_BLACK);
+      int offset=2;
+      uint8_t my_char=0;
+      for (int c=0;c<strlen("EcoVelo!");c++){
+         my_char=data_char[c];
+         printf("Char:%c",my_char);
+         display.setCursor(x+offset,y+h-3);
+         display.println((const char *)&my_char);
+          display.updateWindow(x,y,w,h,true);
+          offset+=14;
+          //display.update();
+      }
       #if 0
       for(int i=0;i<50000;i++){
          sprintf(data_char,"%d",i);
