@@ -520,12 +520,10 @@ void EcoSE2266::_refreshWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h)
 
 void EcoSE2266::_writeToWindow(uint8_t command, uint16_t xs, uint16_t ys, uint16_t xd, uint16_t yd, uint16_t w, uint16_t h)
 {
+  printf("w :%d h :%d x_start:%0x x_end:%0x y_start:%0x y_end:%0x\n",w,h,xs,xd,ys,yd);
+
   uint8_t datacmd[]={0};
   int size_window=(w*h)/8; 
-  uint8_t x_start=0;
-  uint8_t x_end=0;
-  uint y_start=0; 
-  uint y_end=0;
 
   //uint8_t * data=NULL;
   //data= (uint8_t *) malloc(size_window*sizeof(uint8_t));
@@ -537,25 +535,7 @@ void EcoSE2266::_writeToWindow(uint8_t command, uint16_t xs, uint16_t ys, uint16
   if (xd >= EcoSE2266_WIDTH) return;
   if (yd >= EcoSE2266_HEIGHT) return;
 
-  #if 0
-  if ((xs < 0) || (xs >= width()) || (ys < 0) || (ys >= height()))
-    return;
-  switch (getRotation())
-  {
-  case 1:
-    swap(xs, ys);
-    xs = EcoSE2266_WIDTH - xs - 1;
-    break;
-  case 2:
-    xs = EcoSE2266_WIDTH - xs - 1;
-    ys = EcoSE2266_HEIGHT - ys - 1;
-    break;
-  case 3:
-    swap(xs, ys);
-    ys = EcoSE2266_HEIGHT - ys - 1;
-    break;
-  }
-  #endif
+ 
 
   /* simulate x,y ,w ,h  0x07, 0x0b, 0x32 ,0x6a */
   /*
@@ -566,27 +546,46 @@ uint16_t yd=106;
 uint16_t w=40; 
 uint16_t h=56;  */
    uint8_t windowSource[2] = {};	// HRST, HRED
-	uint8_t windowGate[2] = {};	// VRST, VRED
+	uint16_t windowGate[2] = {};	// VRST, VRED
 
   
-  x_start=(xs % 8 == 0)? (xs): (xs/8*8+8);
+  //x_start=(xs % 8 == 0)? (xs): (xs/8*8+8);
    w = gx_uint16_min(w + 7, EcoSE2266_WIDTH - xd) + (xd % 8);
    h = gx_uint16_min(h, EcoSE2266_HEIGHT - yd);
-   x_end=( (xs+w) % 8 == 0)? (xs+w): ( (xs+w)/8*8+8);
-  y_start= ys; 
- y_end=h+ys;
+  // x_end=( (xs+w) % 8 == 0)? (xs+w): ( (xs+w)/8*8+8);
+  //y_start= ys; 
+ //y_end=h+ys;
 
-
-#if 1
-uint8_t h_start=((xs)/8);
-uint8_t h_end=  ( ((w+xs-8) /8) );
-#else
-  uint8_t h_start=floor(xs/8);
-  uint8_t h_end=floor( ( (w+xs)/8)  -1);
+/* Coordinates for set window*/
+uint16_t h_start=((xs)/8);
+uint16_t h_end=  ( ((w+xs-8) /8) );
+  uint16_t v_start= ys; 
+   uint16_t v_end=h+ys;
+ printf("\n H_start:%0x H_end:%0x V_start:%0x V_end:%0x \n",h_start,h_end,v_start,v_end);
+ #if 0
+  switch (getRotation())
+  {
+  case 1:
+    break;
+  case 2:
+  swap(h_start,v_start);
+  swap(h_end,v_end);
+    //xs = EcoSE2266_WIDTH - xs - 1;
+    //ys = EcoSE2266_HEIGHT - ys - 1;
+    break;
+  case 3:
+    swap(xs, ys);
+    ys = EcoSE2266_HEIGHT - ys - 1;
+    break;
+  }
   #endif
-  uint8_t v_start= ys; 
-   uint8_t v_end=h+ys;
- 
+
+ /* end coordinates window */
+
+
+
+
+
 
   uint16_t xe = ((xs +w )/ 8);
 
@@ -595,7 +594,7 @@ uint8_t h_end=  ( ((w+xs-8) /8) );
   windowGate[0]=v_start;
   windowGate[1]=v_end;
 
-  printf("w :%d h :%d x_start:%0x x_end:%0x y_start:%0x y_end:%0x\n xe:%d",w,h,x_start,x_end,y_start,y_end,xe);
+  
   uint8_t PU_data[7];
 		PU_data[0] = (windowSource[0]<<3)&0xf8;     // source start
 		PU_data[1] = (windowSource[1]<<3)|0x07;     // source end
@@ -605,7 +604,7 @@ uint8_t h_end=  ( ((w+xs-8) /8) );
 		PU_data[5] = windowGate[1]&0xff;            // Gate end LSB
 		PU_data[6] = 0x01;
     
-    printf("\n H_start:%d H_end:%d V_start:%d V_end:%d \n",h_start,h_end,v_start,v_end);
+    
     
     printf("PU_data:\n");
     for (int i=0;i<7;i++){

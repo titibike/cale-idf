@@ -128,11 +128,11 @@ void app_main(void)
       //display.println("O");
       //display.printBuffer();
       printf("draw rect\n");
-      int w= 8;
-      int h=16; 
-      int x=1;
-      int y=1;
-      display.setRotation(0);
+      uint8_t w= 120;
+      uint8_t h=40; 
+      uint8_t x=1;
+      uint8_t y=1;
+      display.setRotation(3);
 
       display.setCursor(x+2,y+h);
       //display.drawRect(x,y,w,h,EPD_BLACK);
@@ -143,19 +143,23 @@ void app_main(void)
       display.update();
       vTaskDelay(2000/portTICK_RATE_MS);
       display.updateWindow(x,y,w,h,true);
-      //display.updateWindow(x,y,w,h,false);
-      #if 0
+      #if 1
       int offset=2;
       uint8_t my_char=0;
-      for (int c=0;c<strlen("EcoVelo!");c++){
-         my_char=data_char[c];
-         printf("Char:%c",my_char);
-         display.setCursor(x+offset,y+h-3);
-         display.println((const char *)&my_char);
-          display.updateWindow(x,y,w,h,true);
-          offset+=14;
-          //display.update();
-      }
+      //for (int rot=0;rot<4;rot++){
+         //display.fillScreen(EPD_WHITE);
+         //display.update();
+         //display.setRotation(rot);
+         for (int c=0;c<strlen("EcoVelo!");c++){
+            my_char=data_char[c];
+            printf("Char:%c",my_char);
+            display.setCursor(x+offset,y+h-3);
+            display.println((const char *)&my_char);
+            display.updateWindow(x,y,w,h,true);
+            offset+=14;
+            //display.update();
+         }
+     // }
       #endif
       #if 0
       for(int i=0;i<50000;i++){
