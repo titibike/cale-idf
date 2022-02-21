@@ -61,7 +61,7 @@ class EcoSE2266 : public Epd
     // EPD tests 
     void init(bool debug = false);
     // Partial update of rectangle from buffer to screen, does not power off
-    void updateWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h, bool using_rotation=true);
+    void updateWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
     void fillScreen(uint16_t color);
     void update();
     void _Fullreset(uint32_t ms1, uint32_t ms2, uint32_t ms3, uint32_t ms4, uint32_t ms5);
@@ -75,6 +75,7 @@ class EcoSE2266 : public Epd
     void fastUpdate();
     void fastUpdateInit();
     void printBuffer();
+    void _clearWindow(uint16_t xs, uint16_t ys, uint16_t xd, uint16_t yd, uint16_t w, uint16_t h);
   private:
     EpdSpi& IO;
 

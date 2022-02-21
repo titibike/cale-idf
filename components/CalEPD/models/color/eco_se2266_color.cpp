@@ -236,7 +236,7 @@ void EcoSE2266::_wakeUp()
   data[0]=0x02;
   IO.data(data,1);
   
-  uint8_t data0[] = {0xcf, 0x8d};
+  uint8_t data0[] = {0xcf , 0x8d};
   IO.cmd(0x00);
   IO.data(data0,2); // PSR
  
@@ -253,45 +253,11 @@ void EcoSE2266::_wakeUp()
   _waitBusy("_wakeUp power on");
   #endif
   
-
-  #if 0
-  // Panel setting
-  IO.cmd(0x00);
-  IO.data(0x0f); //KW: 3f, KWR: 2F, BWROTP: 0f, BWOTP: 1f
-
-  // PLL 
-  IO.cmd(0x30);
-  IO.data(0x06);
-
-  // Resolution setting
-  IO.cmd(epd_resolution.cmd);
-  for (int i = 0; i < epd_resolution.databytes; ++i)
-  {
-    IO.data(epd_resolution.data[i]);
-  }
-
-  printf("Boost\n"); // Handles the intensity of the colors displayed
-  IO.cmd(epd_boost.cmd);
-  for (int i=0;i<sizeof(epd_boost.data);++i) {
-    IO.data(epd_boost.data[i]);
-  }
-
-  // Not sure if 0x15 is really needed, seems to work the same without it too
-  IO.cmd(0x15);  // Dual SPI
-  IO.data(0x00); // MM_EN, DUSPI_EN
-
-  IO.cmd(0x50);  // VCOM AND DATA INTERVAL SETTING
-  IO.data(0x11); // LUTKW, N2OCP: copy new to old
-  IO.data(0x07);
-
-  IO.cmd(0x60);  // TCON SETTING
-  IO.data(0x22);
-  #endif
 }
 
 void EcoSE2266::update()
 {
-
+ 
   //memcpy(_color,redBuffer,EcoSE2266_BUFFER_SIZE);
   uint8_t * nextBuffer = _buffer;
   uint8_t * previousBuffer = _previous_buffer;
@@ -303,10 +269,12 @@ void EcoSE2266::update()
   uint8_t data[]={0};
   // send first frame
   IO.cmd(0x10);       
-  IO.data(previousBuffer,EcoSE2266_BUFFER_SIZE);
-// send second frame
-  IO.cmd(0x13);       
   IO.data(nextBuffer,EcoSE2266_BUFFER_SIZE);
+// send second frame
+  IO.cmd(0x13); 
+  for (int i=0;i<EcoSE2266_BUFFER_SIZE;i++){      
+    IO.data(0x00);
+  }
 
   IO.cmd(0x04); //DCDC Power on
   data[0]=0;
@@ -518,15 +486,13 @@ void EcoSE2266::_refreshWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h)
   IO.data(h & 0xff);
 }
 
-void EcoSE2266::_writeToWindow(uint8_t command, uint16_t xs, uint16_t ys, uint16_t xd, uint16_t yd, uint16_t w, uint16_t h)
+void EcoSE2266::_clearWindow(uint16_t xs, uint16_t ys, uint16_t xd, uint16_t yd, uint16_t w, uint16_t h)
 {
   printf("w :%d h :%d x_start:%0x x_end:%0x y_start:%0x y_end:%0x\n",w,h,xs,xd,ys,yd);
 
   uint8_t datacmd[]={0};
   int size_window=(w*h)/8; 
 
-  //uint8_t * data=NULL;
-  //data= (uint8_t *) malloc(size_window*sizeof(uint8_t));
   uint16_t idx=0;
   int cpt=0; 
   // the screen limits are the hard limits
@@ -535,57 +501,19 @@ void EcoSE2266::_writeToWindow(uint8_t command, uint16_t xs, uint16_t ys, uint16
   if (xd >= EcoSE2266_WIDTH) return;
   if (yd >= EcoSE2266_HEIGHT) return;
 
- 
-
-  /* simulate x,y ,w ,h  0x07, 0x0b, 0x32 ,0x6a */
-  /*
-uint16_t xs=56; 
-uint16_t ys=50;  
-uint16_t xd=96; 
-uint16_t yd=106;  
-uint16_t w=40; 
-uint16_t h=56;  */
-   uint8_t windowSource[2] = {};	// HRST, HRED
+  uint8_t windowSource[2] = {};	// HRST, HRED
 	uint16_t windowGate[2] = {};	// VRST, VRED
 
   
-  //x_start=(xs % 8 == 0)? (xs): (xs/8*8+8);
    w = gx_uint16_min(w + 7, EcoSE2266_WIDTH - xd) + (xd % 8);
    h = gx_uint16_min(h, EcoSE2266_HEIGHT - yd);
-  // x_end=( (xs+w) % 8 == 0)? (xs+w): ( (xs+w)/8*8+8);
-  //y_start= ys; 
- //y_end=h+ys;
-
+  
 /* Coordinates for set window*/
 uint16_t h_start=((xs)/8);
 uint16_t h_end=  ( ((w+xs-8) /8) );
   uint16_t v_start= ys; 
    uint16_t v_end=h+ys;
  printf("\n H_start:%0x H_end:%0x V_start:%0x V_end:%0x \n",h_start,h_end,v_start,v_end);
- #if 0
-  switch (getRotation())
-  {
-  case 1:
-    break;
-  case 2:
-  swap(h_start,v_start);
-  swap(h_end,v_end);
-    //xs = EcoSE2266_WIDTH - xs - 1;
-    //ys = EcoSE2266_HEIGHT - ys - 1;
-    break;
-  case 3:
-    swap(xs, ys);
-    ys = EcoSE2266_HEIGHT - ys - 1;
-    break;
-  }
-  #endif
-
- /* end coordinates window */
-
-
-
-
-
 
   uint16_t xe = ((xs +w )/ 8);
 
@@ -623,50 +551,137 @@ uint16_t h_end=  ( ((w+xs-8) /8) );
 
   #if 1
 
-  //for(int a=0;a<size_window;a++){
-   // data[a]=0;
-  //}
   /* Construct the data buffer to send */
 
-  /* Try with memcpy */
-  #if 0
-   idx = xe + ys * (EcoSE2266_WIDTH / 8);
-   for(int b=idx;b<size_window;b++){
-    if(cpt<size_window){
-      data[cpt]=_buffer[b];
-      printf("data[%d]:%0x buffer[%d]:%0x\n",cpt,data[cpt],b,_buffer[b]);
-    }
-    cpt++;
-  }
-  printf("idx:%d \n",idx);
- #else 
   IO.cmd(0x10);     
-
+  
   IO.cmd(0x13);
-  for (uint16_t y1 = ys; y1 < ys+h; y1++)
+  for (uint16_t y1 = ys; y1 <= ys+h; y1++)
   {
     for (uint16_t x1 = xs/8; x1 < xe; x1++)
     {
        idx = y1 * (EcoSE2266_WIDTH / 8 ) + x1;
-       if (idx < sizeof(_buffer)) {
-        IO.data(_buffer[idx]);
-       }
+        IO.data(0x00);
+    }
+  }
+
+
+      IO.cmd(0x50);
+      IO.data(ltb.vcomIntrval,1); 
+
+      IO.cmd(0x12);
+      datacmd[0]=0x0;
+      IO.data(datacmd,1);
+
+      //memcpy(_previous_buffer,_buffer,EcoSE2266_BUFFER_SIZE);
+      vTaskDelay(20/portTICK_RATE_MS);
+      _waitBusy("refresh");
+  #endif
+  printf("Data window : \n");
+  int a=0;
+  #if 0
+  for(int b=0;b<EcoSE2266_BUFFER_SIZE;b++){
+    if(a >= 4186){
+      a++;
+    }
+    printf("data[%d]:%0x buffer[%d]:%0x\n",a,data[a],b,_buffer[b]);
+  }
+  #endif
+  printf("\n");
+  vTaskDelay(pdMS_TO_TICKS(2));
+}
+
+
+void EcoSE2266::_writeToWindow(uint8_t command, uint16_t xs, uint16_t ys, uint16_t xd, uint16_t yd, uint16_t w, uint16_t h)
+{
+  printf("w :%d h :%d x_start:%0x x_end:%0x y_start:%0x y_end:%0x\n",w,h,xs,xd,ys,yd);
+
+  uint8_t datacmd[]={0};
+  int size_window=(w*h)/8; 
+
+  uint16_t idx=0;
+  int cpt=0; 
+  // the screen limits are the hard limits
+  if (xs >= EcoSE2266_WIDTH) return;
+  if (ys >= EcoSE2266_HEIGHT) return;
+  if (xd >= EcoSE2266_WIDTH) return;
+  if (yd >= EcoSE2266_HEIGHT) return;
+
+  uint8_t windowSource[2] = {};	// HRST, HRED
+	uint16_t windowGate[2] = {};	// VRST, VRED
+
+  
+   w = gx_uint16_min(w + 7, EcoSE2266_WIDTH - xd) + (xd % 8);
+   h = gx_uint16_min(h, EcoSE2266_HEIGHT - yd);
+  
+/* Coordinates for set window*/
+uint16_t h_start=((xs)/8);
+uint16_t h_end=  ( ((w+xs-8) /8) );
+  uint16_t v_start= ys; 
+   uint16_t v_end=h+ys;
+ printf("\n H_start:%0x H_end:%0x V_start:%0x V_end:%0x \n",h_start,h_end,v_start,v_end);
+
+  uint16_t xe = ((xs +w )/ 8);
+
+  windowSource[0]=h_start;
+  windowSource[1]=h_end;
+  windowGate[0]=v_start;
+  windowGate[1]=v_end;
+
+  
+  uint8_t PU_data[7];
+		PU_data[0] = (windowSource[0]<<3)&0xf8;     // source start
+		PU_data[1] = (windowSource[1]<<3)|0x07;     // source end
+		PU_data[2] = (windowGate[0]>>8)&0x01;       // Gate start MSB
+		PU_data[3] = windowGate[0]&0xff;            // Gate start LSB
+		PU_data[4] = (windowGate[1]>>8)&0x01;       // Gate end MSB
+		PU_data[5] = windowGate[1]&0xff;            // Gate end LSB
+		PU_data[6] = 0x01;
+    
+    
+    
+    printf("PU_data:\n");
+    for (int i=0;i<7;i++){
+      printf("PU_data[%d]:%d\n",i,PU_data[i]);
+    }
+  
+    IO.cmd(0x90);
+    IO.data(&PU_data[0],7);
+		
+    IO.cmd(0x91);
+    IO.data(&PU_data[0],0); //0x91 doesn’t have data
+
+  /* end Example code */
+  
+/* **/
+
+  #if 1
+
+  /* Construct the data buffer to send */
+
+  IO.cmd(0x10);     
+  #if 0
+  for (uint16_t y1 = ys; y1 <= ys+h; y1++)
+  {
+    for (uint16_t x1 = xs/8; x1 < xe; x1++)
+    {
+       idx = y1 * (EcoSE2266_WIDTH / 8 ) + x1;
+       uint8_t previous_data = (idx < sizeof(_buffer)) ? _previous_buffer[idx] : 0x00;
+      IO.data(previous_data);
+       
     }
   }
   #endif
-    //memcpy(data,Img_3,size_window);
-    //memcpy(data_previous,Img_3,size_window);
-
-    #if 0 /* try to send directly in the loop*/
-      IO.cmd(0x10);       
-      /* Don't send data to*/
-      
-      //Second or new frame
-      IO.cmd(0x13);     
-      for(int a=0;a<size_window;a++){
-        IO.data(data[a]);
-      }
-      #endif
+  IO.cmd(0x13);
+  for (uint16_t y1 = ys; y1 <= ys+h; y1++)
+  {
+    for (uint16_t x1 = xs/8; x1 < xe; x1++)
+    {
+       idx = y1 * (EcoSE2266_WIDTH / 8 ) + x1;
+       uint8_t data = (idx < sizeof(_buffer)) ? _buffer[idx] : 0x00;
+        IO.data(data);
+    }
+  }
 
 
       IO.cmd(0x50);
@@ -694,17 +709,19 @@ uint16_t h_end=  ( ((w+xs-8) /8) );
   vTaskDelay(pdMS_TO_TICKS(2));
 }
 
-void EcoSE2266::updateWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h, bool using_rotation)
+void EcoSE2266::updateWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h)
 {
 
   printf("\n before rotate x:%d y:%d w:%d h : %d \n",x, y, w, h);
 
-  if (using_rotation) _rotate(x, y, w, h);
+  _rotate(x, y, w, h);
   printf("\n after rotate x:%d y:%d w:%d h : %d \n",x, y, w, h);
   // Only if sleep state is true:
   //if (!_using_partial_mode) _wakeUp();
   _using_partial_mode = true;
   fastUpdateInit();
+  //_clearWindow(x, y, x, y, w, h);
+  //fastUpdateInit();
   _writeToWindow(0x15, x, y, x, y, w, h);
   _waitBusy("updateWindow");
   /*
@@ -945,7 +962,7 @@ void EcoSE2266::partialUpdateTest(const unsigned char* partialImgSet[], uint8_t 
   fastUpdateInit();
 	//initPartialUpdate(partialImgConfig);
 
-  updateWindow(56,50,40,56,false);
+  updateWindow(56,50,40,56);
 	uint8_t i=0;
 	while (i < numLoops)
 	{
