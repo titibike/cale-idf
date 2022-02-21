@@ -555,6 +555,15 @@ uint16_t h_end=  ( ((w+xs-8) /8) );
 
   IO.cmd(0x10);     
   
+  for (uint16_t y1 = ys; y1 <= ys+h; y1++)
+  {
+    for (uint16_t x1 = xs/8; x1 < xe; x1++)
+    {
+       idx = y1 * (EcoSE2266_WIDTH / 8 ) + x1;
+        IO.data(0x00);
+    }
+  }
+
   IO.cmd(0x13);
   for (uint16_t y1 = ys; y1 <= ys+h; y1++)
   {
@@ -601,6 +610,8 @@ void EcoSE2266::_writeToWindow(uint8_t command, uint16_t xs, uint16_t ys, uint16
 
   uint16_t idx=0;
   int cpt=0; 
+
+
   // the screen limits are the hard limits
   if (xs >= EcoSE2266_WIDTH) return;
   if (ys >= EcoSE2266_HEIGHT) return;
@@ -660,7 +671,8 @@ uint16_t h_end=  ( ((w+xs-8) /8) );
   /* Construct the data buffer to send */
 
   IO.cmd(0x10);     
-  #if 0
+  #if 1
+  printf("data 0x10 \r\n");
   for (uint16_t y1 = ys; y1 <= ys+h; y1++)
   {
     for (uint16_t x1 = xs/8; x1 < xe; x1++)
@@ -668,10 +680,10 @@ uint16_t h_end=  ( ((w+xs-8) /8) );
        idx = y1 * (EcoSE2266_WIDTH / 8 ) + x1;
        uint8_t previous_data = (idx < sizeof(_buffer)) ? _previous_buffer[idx] : 0x00;
       IO.data(previous_data);
-       
     }
   }
   #endif
+
   IO.cmd(0x13);
   for (uint16_t y1 = ys; y1 <= ys+h; y1++)
   {
@@ -719,9 +731,12 @@ void EcoSE2266::updateWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h)
   // Only if sleep state is true:
   //if (!_using_partial_mode) _wakeUp();
   _using_partial_mode = true;
-  fastUpdateInit();
   //_clearWindow(x, y, x, y, w, h);
-  //fastUpdateInit();
+  fastUpdateInit();
+
+  /* Try to replace fast update init */
+
+
   _writeToWindow(0x15, x, y, x, y, w, h);
   _waitBusy("updateWindow");
   /*
