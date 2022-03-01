@@ -8,6 +8,7 @@
 // Controller: Aurora MB EC2266
 // Specification: https://www.pervasivedisplays.com/wp-content/uploads/2019/06/ApplicationNote_Small_Size_Mono_v01_181022-6.pdf
 
+#define EPD_HOST SPI2_HOST
 
 //partial screen update LUT
 DRAM_ATTR const epd_init_44 EcoSE2266::lut_20_vcomDC_partial={
@@ -92,13 +93,85 @@ EcoSE2266::EcoSE2266(EpdSpi &dio) : Adafruit_GFX(EcoSE2266_WIDTH, EcoSE2266_HEIG
 void EcoSE2266::init(bool debug)
 {
   debug_enabled = debug;
+  int frequency=4;
   if (debug_enabled){
     printf("EcoSE2266::init(debug:%d)\n", debug);
   }
   //Initialize SPI at 4MHz frequency. true for debug
-  IO.init(4, debug);
+  #if 0
+ // IO.init(4, debug);
+  #else
+    //Initialize GPIOs direction & initial states
+    gpio_set_direction((gpio_num_t)CONFIG_EINK_SPI_CS, GPIO_MODE_OUTPUT);
+    gpio_set_direction((gpio_num_t)CONFIG_EINK_DC, GPIO_MODE_OUTPUT);
+    gpio_set_direction((gpio_num_t)CONFIG_EINK_RST, GPIO_MODE_OUTPUT);
+    gpio_set_direction((gpio_num_t)CONFIG_EINK_BUSY, GPIO_MODE_INPUT);
+    gpio_set_pull_mode((gpio_num_t)CONFIG_EINK_BUSY, GPIO_PULLUP_ONLY);
+
+    gpio_set_level((gpio_num_t)CONFIG_EINK_SPI_CS, 1);
+    gpio_set_level((gpio_num_t)CONFIG_EINK_DC, 1);
+    gpio_set_level((gpio_num_t)CONFIG_EINK_RST, 1);
+    
+    esp_err_t ret;
+    // MISO not used, only Master to Slave
+    spi_bus_config_t buscfg={
+        .mosi_io_num=CONFIG_EINK_SPI_MOSI,
+        .miso_io_num = CONFIG_EINK_SPI_MISO,
+        .sclk_io_num=CONFIG_EINK_SPI_CLK,
+        .quadwp_io_num=-1,
+        .quadhd_io_num=-1,
+        .max_transfer_sz=4094
+    };
+    
+    /*
+    if (debug_enabled) {
+        frequency = 50;
+        multiplier = 1;
+    }*/
+    
+
+    #if 1 /* Not initialize because SD card already initialize it */
+    //Initialize the SPI bus
+    ret=spi_bus_initialize(EPD_HOST, &buscfg, EPD_HOST);
+    ESP_ERROR_CHECK(ret);
+    #endif
+    
+    
+    #endif
   fillScreen(EPD_WHITE);
 }
+
+void EcoSE2266::addSpiDevice(){
+  // max_transfer_sz   4Kb is the defaut SPI transfer size if 0
+    // debug: 50000  0.5 Mhz so we can sniff the SPI commands with a Slave
+    uint16_t multiplier = 1000;
+    uint16_t frequency=4;
+  //Config Frequency and SS GPIO
+    spi_device_interface_config_t devcfg={
+        .mode=0,  //SPI mode 0
+        .clock_speed_hz=frequency*multiplier*1000,  // DEBUG: 50000 - No debug usually 4 Mhz
+        //.clock_speed_hz=4000000,  // DEBUG: 50000 - No debug usually 4 Mhz
+        .input_delay_ns=0,
+        .spics_io_num=CONFIG_EINK_SPI_CS,
+        .flags = (SPI_DEVICE_HALFDUPLEX | SPI_DEVICE_3WIRE),
+        .queue_size=5
+    };
+    // DISABLED Callbacks pre_cb/post_cb. SPI does not seem to behave the same
+    // CS / DC GPIO states the usual way
+
+  //Attach the EPD to the SPI bus
+    esp_err_t ret=spi_bus_add_device(EPD_HOST, &devcfg, &IO.spi);
+    ESP_ERROR_CHECK(ret);
+    if (debug_enabled) {
+      printf("EpdSpi::init() Debug enabled. SPI master at frequency:%d  MOSI:%d CLK:%d CS:%d DC:%d RST:%d BUSY:%d DMA_CH: %d\n",
+      frequency*multiplier*1000, CONFIG_EINK_SPI_MOSI, CONFIG_EINK_SPI_CLK, CONFIG_EINK_SPI_CS,
+      CONFIG_EINK_DC,CONFIG_EINK_RST,CONFIG_EINK_BUSY, EPD_HOST);
+        } 
+    else {
+        printf("EpdSPI started at frequency: %d000\n", frequency*multiplier);
+    }
+}
+
 
 void EcoSE2266::fillScreen(uint16_t color)
 {

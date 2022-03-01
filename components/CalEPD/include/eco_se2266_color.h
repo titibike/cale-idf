@@ -76,6 +76,7 @@ class EcoSE2266 : public Epd
     void fastUpdateInit();
     void printBuffer();
     void _clearWindow(uint16_t xs, uint16_t ys, uint16_t xd, uint16_t yd, uint16_t w, uint16_t h);
+    void addSpiDevice();
   private:
     EpdSpi& IO;
 

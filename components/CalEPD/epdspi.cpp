@@ -35,7 +35,7 @@ void EpdSpi::init(uint8_t frequency=4,bool debug=false){
     // MISO not used, only Master to Slave
     spi_bus_config_t buscfg={
         .mosi_io_num=CONFIG_EINK_SPI_MOSI,
-        .miso_io_num = -1,
+        .miso_io_num = CONFIG_EINK_SPI_MISO,
         .sclk_io_num=CONFIG_EINK_SPI_CLK,
         .quadwp_io_num=-1,
         .quadhd_io_num=-1,
@@ -62,13 +62,15 @@ void EpdSpi::init(uint8_t frequency=4,bool debug=false){
     // DISABLED Callbacks pre_cb/post_cb. SPI does not seem to behave the same
     // CS / DC GPIO states the usual way
 
+    #if 1 /* Not initialize because SD card already initialize it */
     //Initialize the SPI bus
     ret=spi_bus_initialize(EPD_HOST, &buscfg, DMA_CHAN);
     ESP_ERROR_CHECK(ret);
+    #endif
 
     //Attach the EPD to the SPI bus
-    ret=spi_bus_add_device(EPD_HOST, &devcfg, &spi);
-    ESP_ERROR_CHECK(ret);
+    //ret=spi_bus_add_device(EPD_HOST, &devcfg, &spi);
+    //ESP_ERROR_CHECK(ret);
     #if 1
     if (debug_enabled) {
       printf("EpdSpi::init() Debug enabled. SPI master at frequency:%d  MOSI:%d CLK:%d CS:%d DC:%d RST:%d BUSY:%d DMA_CH: %d\n",

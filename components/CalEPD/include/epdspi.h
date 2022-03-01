@@ -18,7 +18,7 @@ class EpdSpi : IoInterface
     void reset(uint8_t millis) override;
     void init(uint8_t frequency, bool debug) override;
   private:
-    bool debug_enabled = true;
+    bool debug_enabled = false;
 };
 #endif
 // Note: using override compiler will issue an error for "changing the type"
