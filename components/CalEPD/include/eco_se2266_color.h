@@ -52,6 +52,8 @@ class EcoSE2266 : public Epd
   public:
    
     EcoSE2266(EpdSpi& IO);
+    EpdSpi& IO;
+    
     uint8_t colors_supported = 3;
     LUT_data ltb;
     uint8_t _buffer[EcoSE2266_BUFFER_SIZE];
@@ -78,7 +80,7 @@ class EcoSE2266 : public Epd
     void _clearWindow(uint16_t xs, uint16_t ys, uint16_t xd, uint16_t yd, uint16_t w, uint16_t h);
     void addSpiDevice();
   private:
-    EpdSpi& IO;
+    
 
     
     bool _using_partial_mode = false;

@@ -35,7 +35,7 @@ menu "Display Configuration"
         default 4
     config EINK_SPI_MISO
         int "EPD SPI: GPIO for MISO"
-        range -1 36
+        range -1 37
         default 19
         
     comment "Config below applies to 4 epaper module wave12I48 w/4 SPI CS & BUSY pins (14 pins)"

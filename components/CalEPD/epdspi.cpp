@@ -33,7 +33,7 @@ void EpdSpi::init(uint8_t frequency=4,bool debug=false){
     
     esp_err_t ret;
     // MISO not used, only Master to Slave
-    spi_bus_config_t buscfg={
+    spi_bus_config_t buscfg={ 
         .mosi_io_num=CONFIG_EINK_SPI_MOSI,
         .miso_io_num = CONFIG_EINK_SPI_MISO,
         .sclk_io_num=CONFIG_EINK_SPI_CLK,
