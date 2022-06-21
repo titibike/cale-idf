@@ -20,23 +20,16 @@
 void EpdSpi::init(uint8_t frequency=4,bool debug=false){
     debug_enabled = debug;
 
-    //Initialize GPIOs direction & initial states
-    gpio_set_direction((gpio_num_t)CONFIG_EINK_SPI_CS, GPIO_MODE_OUTPUT);
-    gpio_set_direction((gpio_num_t)CONFIG_EINK_DC, GPIO_MODE_OUTPUT);
-    gpio_set_direction((gpio_num_t)CONFIG_EINK_RST, GPIO_MODE_OUTPUT);
-    gpio_set_direction((gpio_num_t)CONFIG_EINK_BUSY, GPIO_MODE_INPUT);
-    gpio_set_pull_mode((gpio_num_t)CONFIG_EINK_BUSY, GPIO_PULLUP_ONLY);
-
-    gpio_set_level((gpio_num_t)CONFIG_EINK_SPI_CS, 1);
-    gpio_set_level((gpio_num_t)CONFIG_EINK_DC, 1);
-    gpio_set_level((gpio_num_t)CONFIG_EINK_RST, 1);
+    gpio_bike_set_level(GPIO_CS_ECRAN,1);
+    gpio_bike_set_level(GPIO_ECRAN_CD,1);
+    gpio_bike_set_level(GPIO_ECRAN_RESET,1);
     
     esp_err_t ret;
     // MISO not used, only Master to Slave
-    spi_bus_config_t buscfg={ 
-        .mosi_io_num=CONFIG_EINK_SPI_MOSI,
-        .miso_io_num = CONFIG_EINK_SPI_MISO,
-        .sclk_io_num=CONFIG_EINK_SPI_CLK,
+   spi_bus_config_t buscfg={
+        .mosi_io_num=GPIO_SPI_MOSI,
+        .miso_io_num = GPIO_SPI_MISO,
+        .sclk_io_num=GPIO_SPI_SCLK,
         .quadwp_io_num=-1,
         .quadhd_io_num=-1,
         .max_transfer_sz=4094
@@ -73,12 +66,12 @@ void EpdSpi::init(uint8_t frequency=4,bool debug=false){
     //ESP_ERROR_CHECK(ret);
     #if 1
     if (debug_enabled) {
-      printf("EpdSpi::init() Debug enabled. SPI master at frequency:%d  MOSI:%d CLK:%d CS:%d DC:%d RST:%d BUSY:%d DMA_CH: %d\n",
+      printf("HELLO Elie EpdSpi::init() Debug enabled. SPI master at frequency:%d  MOSI:%d CLK:%d CS:%d DC:%d RST:%d BUSY:%d DMA_CH: %d\n",
       frequency*multiplier*1000, CONFIG_EINK_SPI_MOSI, CONFIG_EINK_SPI_CLK, CONFIG_EINK_SPI_CS,
       CONFIG_EINK_DC,CONFIG_EINK_RST,CONFIG_EINK_BUSY, DMA_CHAN);
         } 
     else {
-        printf("EpdSPI started at frequency: %d000\n", frequency*multiplier);
+        printf(" HELLO Elie EpdSPI started at frequency: %d000\n", frequency*multiplier);
     }
     #endif
 }
@@ -104,13 +97,13 @@ void EpdSpi::cmd(const uint8_t cmd)
     t.length=8;                     //Command is 8 bits
     t.tx_buffer=&cmd;               //The data is the cmd itself 
     // No need to toogle CS when spics_io_num is defined in SPI config struct
-    //gpio_set_level((gpio_num_t)CONFIG_EINK_SPI_CS, 0);
-    gpio_set_level((gpio_num_t)CONFIG_EINK_DC, 0);
+    
+    gpio_bike_set_level(GPIO_CS_ECRAN,0);
     ret=spi_device_polling_transmit(spi, &t);
 
     assert(ret==ESP_OK);
-    gpio_set_level((gpio_num_t)CONFIG_EINK_DC, 1);
-    
+
+    gpio_bike_set_level(GPIO_CS_ECRAN,1);
 }
 
 void EpdSpi::data(uint8_t data)
@@ -166,8 +159,8 @@ void EpdSpi::data(const uint8_t *data, int len)
 }
 
 void EpdSpi::reset(uint8_t millis=20) {
-    gpio_set_level((gpio_num_t)CONFIG_EINK_RST, 0);
+    gpio_bike_set_level(GPIO_ECRAN_RESET,0);
     vTaskDelay(millis / portTICK_RATE_MS);
-    gpio_set_level((gpio_num_t)CONFIG_EINK_RST, 1);
+    gpio_bike_set_level(GPIO_ECRAN_RESET,1);
     vTaskDelay(millis / portTICK_RATE_MS);
 }

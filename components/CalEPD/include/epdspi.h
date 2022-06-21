@@ -2,6 +2,7 @@
 #include "driver/spi_master.h"
 #include "driver/gpio.h"
 #include "iointerface.h"
+#include "gpio_expander.h"
 
 #ifndef epdspi_h
 #define epdspi_h

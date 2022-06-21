@@ -15,6 +15,7 @@
 #include "soc/rtc_wdt.h"
 #include <gdew_colors.h>
 
+
 // 2.66"
 // _widthScreen = 296; // x = wide size
 // _heightScreen = 152; // y = small size
