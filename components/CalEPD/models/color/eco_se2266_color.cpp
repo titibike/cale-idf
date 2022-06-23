@@ -197,7 +197,7 @@ void EcoSE2266::_wakeUp()
 {
   ESP_LOGI(TAG,"Wake up  \n");
   uint8_t data[]={0};
-  vTaskDelay(1/portTICK_RATE_MS); // delay_ms1
+  vTaskDelay(10/portTICK_RATE_MS); // delay_ms1
   gpio_bike_set_level(GPIO_ECRAN_RESET,1);
   ets_delay_us(4500);
   gpio_bike_set_level(GPIO_ECRAN_RESET,1);
@@ -205,14 +205,14 @@ void EcoSE2266::_wakeUp()
   gpio_bike_set_level(GPIO_ECRAN_RESET,0);
   ets_delay_us(4500);
   gpio_bike_set_level(GPIO_ECRAN_RESET,1);
-  vTaskDelay(1/portTICK_RATE_MS); // delay_ms5 5ms
+  vTaskDelay(10/portTICK_RATE_MS); // delay_ms5 5ms
 
   gpio_bike_set_level(GPIO_CS_ECRAN,1);
   
   IO.cmd(0x00); 
   data[0]=0x0e;
   IO.data(data,1); // Soft-reset
-  vTaskDelay(5/portTICK_RATE_MS);
+  ets_delay_us(4500);
 
   IO.cmd(0xe5);
   data[0]=0x19;

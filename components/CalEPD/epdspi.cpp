@@ -98,12 +98,12 @@ void EpdSpi::cmd(const uint8_t cmd)
     t.tx_buffer=&cmd;               //The data is the cmd itself 
     // No need to toogle CS when spics_io_num is defined in SPI config struct
     
-    gpio_bike_set_level(GPIO_CS_ECRAN,0);
+    gpio_bike_set_level(GPIO_ECRAN_CD,0);
     ret=spi_device_polling_transmit(spi, &t);
 
     assert(ret==ESP_OK);
 
-    gpio_bike_set_level(GPIO_CS_ECRAN,1);
+    gpio_bike_set_level(GPIO_ECRAN_CD,1);
 }
 
 void EpdSpi::data(uint8_t data)
