@@ -23,7 +23,7 @@ set(srcs
     #"models/color/gdeh042Z21.cpp"
     #"models/color/wave12i48BR.cpp"
     "models/color/eco_se2266_color.cpp"
-
+    "models/GxDEPG0290B.cpp"
     # 7 colors Waveshare
     #"models/color/wave4i7Color.cpp"
     #"models/color/wave5i7Color.cpp"
