@@ -11,12 +11,9 @@
 
 #define EPD_HOST SPI2_HOST
 #define ESP32 1
-//#define DISABLE_DIAGNOSTIC_OUTPUT
-
-
 
 // Partial Update Delay, may have an influence on degradation
-#define GxDEPG0290B_PU_DELAY 300
+#define GxDEPG0290B_PU_DELAY 200
 
 
 const uint8_t GxDEPG0290B::LUTDefault_part[] = {
@@ -135,7 +132,7 @@ void GxDEPG0290B::addSpiDevice(){
   // max_transfer_sz   4Kb is the defaut SPI transfer size if 0
     // debug: 50000  0.5 Mhz so we can sniff the SPI commands with a Slave
     uint16_t multiplier = 1000;
-    uint16_t frequency=4;
+    uint16_t frequency=8;
   //Config Frequency and SS GPIO
     spi_device_interface_config_t devcfg={
         .mode=0,  //SPI mode 0
@@ -187,7 +184,70 @@ void GxDEPG0290B::update(void)
     _PowerOff();
 }
 
-#if 0
+#if 1
+
+void  GxDEPG0290B::drawBitmapBM(const uint8_t *bitmap, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color, int16_t mode)
+{
+  uint16_t inverse_color = (color != EPD_WHITE) ? EPD_WHITE : EPD_BLACK;
+  uint16_t fg_color = (mode & bm_invert) ? inverse_color : color;
+  uint16_t bg_color = (mode & bm_invert) ? color : inverse_color;
+  // taken from Adafruit_GFX.cpp, modified
+  int16_t byteWidth = (w + 7) / 8; // Bitmap scanline pad = whole byte
+  uint8_t byte = 0;
+  if (mode & bm_transparent)
+  {
+    for (int16_t j = 0; j < h; j++)
+    {
+      for (int16_t i = 0; i < w; i++ )
+      {
+        if (i & 7) byte <<= 1;
+        else
+        {
+
+          byte = bitmap[j * byteWidth + i / 8];
+
+        }
+        // transparent mode
+        if (bool(mode & bm_invert) != bool(byte & 0x80))
+        //if (!(byte & 0x80))
+        {
+          uint16_t xd = x + i;
+          uint16_t yd = y + j;
+          if (mode & bm_flip_x) xd = x + w - i;
+          if (mode & bm_flip_y) yd = y + h - j;
+          drawPixel(xd, yd, color);
+        }
+      }
+    }
+  }
+  else
+  {
+    for (int16_t j = 0; j < h; j++)
+    {
+      for (int16_t i = 0; i < w; i++ )
+      {
+        if (i & 7) byte <<= 1;
+        else
+        {
+
+          byte = bitmap[j * byteWidth + i / 8];
+
+        }
+        // keep using overwrite mode
+        uint16_t pixelcolor = (byte & 0x80) ? fg_color  : bg_color;
+        uint16_t xd = x + i;
+        uint16_t yd = y + j;
+        if (mode & bm_flip_x) xd = x + w - i;
+        if (mode & bm_flip_y) yd = y + h - j;
+        drawPixel(xd, yd, pixelcolor);
+      }
+    }
+  }
+}
+
+
+
+
 void  GxDEPG0290B::drawBitmap(const uint8_t *bitmap, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color, int16_t mode)
 {
     if (mode & bm_default) mode |= bm_flip_x | bm_invert;
@@ -211,11 +271,7 @@ void GxDEPG0290B::drawBitmap(const uint8_t *bitmap, uint32_t size, int16_t mode)
         for (uint32_t i = 0; i < GxDEPG0290B_BUFFER_SIZE; i++) {
             uint8_t data = 0xFF; // white is 0xFF on device
             if (i < size) {
-#if defined(__AVR) || defined(ESP8266) || defined(ESP32)
-                data = pgm_read_byte(&bitmap[i]);
-#else
-                data = bitmap[i];
-#endif
+          data = bitmap[i];
                 if (mode & bm_invert) data = ~data;
             }
             _writeData(data);
@@ -227,11 +283,9 @@ void GxDEPG0290B::drawBitmap(const uint8_t *bitmap, uint32_t size, int16_t mode)
         for (uint32_t i = 0; i < GxDEPG0290B_BUFFER_SIZE; i++) {
             uint8_t data = 0xFF; // white is 0xFF on device
             if (i < size) {
-#if defined(__AVR) || defined(ESP8266) || defined(ESP32)
-                data = pgm_read_byte(&bitmap[i]);
-#else
+
                 data = bitmap[i];
-#endif
+
                 if (mode & bm_invert) data = ~data;
             }
             _writeData(data);
@@ -245,11 +299,9 @@ void GxDEPG0290B::drawBitmap(const uint8_t *bitmap, uint32_t size, int16_t mode)
         for (uint32_t i = 0; i < GxDEPG0290B_BUFFER_SIZE; i++) {
             uint8_t data = 0xFF; // white is 0xFF on device
             if (i < size) {
-#if defined(__AVR) || defined(ESP8266) || defined(ESP32)
-                data = pgm_read_byte(&bitmap[i]);
-#else
+
                 data = bitmap[i];
-#endif
+
                 if (mode & bm_invert) data = ~data;
             }
             _writeData(data);
